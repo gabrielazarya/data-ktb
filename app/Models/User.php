@@ -2,30 +2,59 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
     /**
-     * The attributes that are mass assignable.
+     * Nama tabel di database
+     */
+    protected $table = 'users';
+
+    /**
+     * Primary key kustom
+     */
+    protected $primaryKey = 'user_id';
+
+    /**
+     * Field yang digunakan untuk autentikasi (bukan email, tapi username)
+     */
+    protected $username = 'username';
+
+    /**
+     * Override: field identifier untuk autentikasi Laravel
+     */
+    public function getAuthIdentifierName(): string
+    {
+        return 'user_id';
+    }
+
+
+    /**
+     * Kolom yang boleh diisi secara massal
      *
      * @var list<string>
      */
     protected $fillable = [
-        'name',
-        'email',
+        'username',
         'password',
+        'nama_lengkap',
+        'tanggal_lahir',
+        'kampus_id',
+        'angkatan',
+        'role',
+        'foto_profil',
+        'is_target',
+        'admin_tipe',
+        'is_active',
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
+     * Kolom yang disembunyikan dari serialisasi (JSON/array)
      *
      * @var list<string>
      */
@@ -35,15 +64,63 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * Casting tipe data kolom
      *
      * @return array<string, string>
      */
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'tanggal_lahir' => 'date',
+            'password'      => 'hashed',
+            'is_target'     => 'boolean',
+            'is_active'     => 'boolean',
         ];
+    }
+
+    // =========================================================
+    // Helper Role — cek role user saat ini
+    // =========================================================
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'super_admin';
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isPKK(): bool
+    {
+        return $this->role === 'pkk';
+    }
+
+    public function isAKK(): bool
+    {
+        return $this->role === 'akk';
+    }
+
+    public function isAdminEditor(): bool
+    {
+        return $this->role === 'admin' && $this->admin_tipe === 'editor';
+    }
+
+    public function isAdminPelihat(): bool
+    {
+        return $this->role === 'admin' && $this->admin_tipe === 'pelihat';
+    }
+
+    // =========================================================
+    // Relasi Eloquent
+    // =========================================================
+
+    /**
+     * Kampus asal user ini
+     */
+    public function kampus()
+    {
+        return $this->belongsTo(Kampus::class, 'kampus_id', 'kampus_id');
     }
 }

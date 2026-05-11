@@ -41,4 +41,21 @@ Route::view('/widgets/cards.html', 'static.widgets.cards')->name('widgets.cards'
 Route::view('/widgets/info-box.html', 'static.widgets.info-box')->name('widgets.info_box');
 Route::view('/widgets/small-box.html', 'static.widgets.small-box')->name('widgets.small_box');
 
-Route::redirect('/', '/index2.html');
+use App\Http\Controllers\AuthController;
+
+// Landing Page
+Route::view('/', 'landing')->name('landing');
+
+// Auth Routes
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login')->middleware('guest');
+Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
+
+// Dashboard placeholders (akan diganti dengan controller penuh nanti)
+Route::middleware(['auth'])->group(function () {
+    Route::view('/superadmin/dashboard', 'superadmin.dashboard')->name('superadmin.dashboard');
+    Route::view('/admin/dashboard', 'admin.dashboard')->name('admin.dashboard');
+    Route::view('/pkk/dashboard', 'pkk.dashboard')->name('pkk.dashboard');
+    Route::view('/akk/dashboard', 'akk.dashboard')->name('akk.dashboard');
+});
+
