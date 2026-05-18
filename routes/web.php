@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/docs/browser-support.html', 'static.docs.browser-support')->name('docs.browser_support');
@@ -41,8 +43,6 @@ Route::view('/widgets/cards.html', 'static.widgets.cards')->name('widgets.cards'
 Route::view('/widgets/info-box.html', 'static.widgets.info-box')->name('widgets.info_box');
 Route::view('/widgets/small-box.html', 'static.widgets.small-box')->name('widgets.small_box');
 
-use App\Http\Controllers\AuthController;
-
 // Landing Page
 Route::view('/', 'landing')->name('landing');
 
@@ -51,11 +51,15 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login')->middl
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
-// Dashboard placeholders (akan diganti dengan controller penuh nanti)
+// Dashboard setelah login
 Route::middleware(['auth'])->group(function () {
-    Route::view('/superadmin/dashboard', 'superadmin.dashboard')->name('superadmin.dashboard');
-    Route::view('/admin/dashboard', 'admin.dashboard')->name('admin.dashboard');
-    Route::view('/pkk/dashboard', 'pkk.dashboard')->name('pkk.dashboard');
-    Route::view('/akk/dashboard', 'akk.dashboard')->name('akk.dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/superadmin/dashboard', [DashboardController::class, 'superadmin'])->name('superadmin.dashboard');
+    Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');
+    Route::get('/pkk/dashboard', [DashboardController::class, 'pkk'])->name('pkk.dashboard');
+    Route::get('/akk/dashboard', [DashboardController::class, 'akk'])->name('akk.dashboard');
+    Route::get('/dashboard/kampus', [DashboardController::class, 'kampus'])->name('dashboard.kampus');
+    Route::get('/dashboard/pengguna', [DashboardController::class, 'pengguna'])->name('dashboard.pengguna');
+    Route::get('/dashboard/pemuridan', [DashboardController::class, 'pemuridan'])->name('dashboard.pemuridan');
+    Route::get('/dashboard/pohon-pemuridan', [DashboardController::class, 'pohon'])->name('dashboard.pohon');
 });
-
