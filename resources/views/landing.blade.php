@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -6,140 +6,9 @@
 <title>Jejak Murid</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
-:root{
-  --navy:#346739;
-  --navy2:#79AE6F;
-  --gold:#9FCB98;
-  --gold2:#79AE6F;
-  --cream:#f4faf4;
-  --gray:#6b7280;
-  --white:#ffffff;
-}
-html{scroll-behavior:smooth;}
-body{font-family:'Inter',sans-serif;background:var(--cream);color:#2d3a2e;}
-
-/* NAV */
-nav{position:fixed;top:0;left:0;right:0;z-index:999;padding:0 5%;display:flex;align-items:center;justify-content:space-between;height:70px;background:rgba(52,103,57,0.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(159,203,152,0.25);transition:.3s;}
-.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
-.nav-logo img{height:38px;width:38px;object-fit:contain;}
-.nav-logo span{font-size:1.1rem;font-weight:700;color:var(--white);}
-.nav-logo span em{color:var(--gold);font-style:normal;}
-.nav-links{display:flex;align-items:center;gap:2rem;}
-.nav-links a{color:rgba(255,255,255,0.85);text-decoration:none;font-size:.9rem;font-weight:500;transition:.2s;}
-.nav-links a:hover{color:#ffffff;}
-.btn-login{background:#ffffff;color:#346739!important;padding:.45rem 1.2rem;border-radius:8px;font-weight:700!important;transition:.2s!important;border:2px solid transparent;}
-.btn-login:hover{background:#f0faf0;transform:translateY(-1px);}
-
-/* HERO */
-#home{min-height:100vh;background-size:cover;background-position:center;background-repeat:no-repeat;display:flex;align-items:center;justify-content:center;text-align:center;padding:120px 5% 80px;position:relative;overflow:hidden;}
-#home::before{content:'';position:absolute;inset:0;background:rgba(0,0,0,0.45);}
-.hero-badge{display:inline-flex;align-items:center;gap:.5rem;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:var(--white);padding:.4rem 1rem;border-radius:50px;font-size:.8rem;font-weight:600;margin-bottom:1.5rem;letter-spacing:.05em;}
-.hero-badge::before{content:'✦';}
-#home h1{font-size:clamp(2.2rem,5vw,4rem);font-weight:900;color:var(--white);line-height:1.1;margin-bottom:1.2rem;}
-#home h1 span{color:#ffffff;text-shadow:0 2px 20px rgba(0,0,0,.25);}
-#home p{font-size:1.1rem;color:rgba(255,255,255,0.7);max-width:600px;margin:0 auto 2.5rem;line-height:1.8;}
-.hero-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;}
-.btn-primary{background:#ffffff;color:#346739;padding:.8rem 2rem;border-radius:10px;text-decoration:none;font-weight:700;font-size:.95rem;transition:.2s;box-shadow:0 4px 20px rgba(0,0,0,.2);}
-.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.3);background:#f0faf0;}
-.btn-outline{border:2px solid rgba(255,255,255,.7);color:var(--white);padding:.8rem 2rem;border-radius:10px;text-decoration:none;font-weight:600;font-size:.95rem;transition:.2s;}
-.btn-outline:hover{border-color:#ffffff;background:rgba(255,255,255,.15);}
-.hero-scroll{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.4rem;color:rgba(255,255,255,.6);font-size:.75rem;}
-.scroll-dot{width:6px;height:6px;background:#ffffff;border-radius:50%;animation:scrollBounce 1.5s infinite;}
-@keyframes scrollBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(6px);}}
-
-/* SECTION STYLES */
-section{padding:90px 5%;}
-.section-tag{display:inline-block;background:rgba(52,103,57,.1);color:#2e6b33;font-size:.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:.3rem .9rem;border-radius:50px;margin-bottom:1rem;border:1px solid rgba(52,103,57,.2);}
-.section-title{font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:800;color:#1e3d20;margin-bottom:1rem;line-height:1.2;}
-.section-title span{color:#346739;}
-.section-desc{font-size:1rem;color:#4b5e4d;line-height:1.8;max-width:600px;}
-.divider{width:60px;height:4px;background:linear-gradient(90deg,#346739,#79AE6F);border-radius:2px;margin:1rem 0;}
-
-/* PERKANTAS */
-#perkantas{background:var(--white);}
-.perkantas-grid{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;max-width:1100px;margin:0 auto;}
-.perkantas-img-box{position:relative;}
-.perkantas-card-big{background:linear-gradient(135deg,#1e4022,#346739);border-radius:20px;padding:3rem 2.5rem;color:white;position:relative;overflow:hidden;}
-.perkantas-card-big::after{content:'✝';position:absolute;right:-20px;bottom:-30px;font-size:8rem;opacity:.08;color:white;}
-.perkantas-card-big h3{font-size:1.6rem;font-weight:800;margin-bottom:.6rem;color:#ffffff;}
-.perkantas-card-big p{font-size:.9rem;line-height:1.8;color:rgba(255,255,255,.85);}
-.perkantas-stats{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.5rem;}
-.stat-item{background:rgba(255,255,255,.12);border-radius:12px;padding:1rem;text-align:center;border:1px solid rgba(255,255,255,.1);}
-.stat-num{font-size:1.5rem;font-weight:800;color:#ffffff;}
-.stat-label{font-size:.75rem;color:rgba(255,255,255,.75);}
-.perkantas-text .section-desc{max-width:100%;}
-.perkantas-values{display:flex;flex-direction:column;gap:1rem;margin-top:2rem;}
-.value-item{display:flex;gap:1rem;align-items:flex-start;}
-.value-icon{width:40px;height:40px;background:#346739;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;box-shadow:0 2px 8px rgba(52,103,57,.3);}
-.value-item h4{font-weight:700;color:#1e3d20;margin-bottom:.2rem;}
-.value-item p{font-size:.875rem;color:#4b5e4d;}
-
-/* KTB */
-#ktb{background:linear-gradient(180deg,var(--cream) 0%,#e8f5e8 100%);}
-.ktb-inner{max-width:1100px;margin:0 auto;}
-.ktb-header{text-align:center;margin-bottom:4rem;}
-.ktb-header .section-desc{margin:0 auto;}
-.ktb-flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.5rem;margin-bottom:3rem;}
-.ktb-step{background:var(--white);border-radius:16px;padding:1.8rem;position:relative;box-shadow:0 2px 16px rgba(52,103,57,.08);border-top:3px solid #346739;transition:.3s;}
-.ktb-step:hover{transform:translateY(-4px);box-shadow:0 8px 30px rgba(52,103,57,.15);}
-.step-num{width:36px;height:36px;background:#346739;color:#ffffff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;margin-bottom:1rem;}
-.ktb-step h4{font-weight:700;color:#1e3d20;margin-bottom:.5rem;}
-.ktb-step p{font-size:.875rem;color:#4b5e4d;line-height:1.7;}
-.ktb-quote{background:linear-gradient(135deg,#1e4022,#346739);border-radius:16px;padding:2.5rem;text-align:center;color:white;box-shadow:0 4px 24px rgba(52,103,57,.3);}
-.ktb-quote blockquote{font-size:1.1rem;font-style:italic;line-height:1.8;color:rgba(255,255,255,.95);margin-bottom:1rem;}
-.ktb-quote cite{color:#9FCB98;font-size:.85rem;font-weight:600;}
-
-/* PROFILES */
-#profil{background:var(--white);}
-.profil-header{text-align:center;margin-bottom:4rem;}
-.profil-header .section-desc{margin:0 auto;}
-.cards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:2rem;max-width:1100px;margin:0 auto;}
-.profile-card{border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);transition:.3s;position:relative;}
-.profile-card:hover{transform:translateY(-6px);box-shadow:0 12px 40px rgba(0,0,0,.15);}
-.card-header{padding:2rem 2rem 1.5rem;position:relative;}
-.card-pkk .card-header{background:linear-gradient(135deg,#1e4022,#346739);}
-.card-cpkk .card-header{background:linear-gradient(135deg,#346739,#79AE6F);}
-.card-akk .card-header{background:linear-gradient(135deg,#79AE6F,#9FCB98);}
-.card-role-badge{display:inline-block;background:rgba(255,255,255,.2);color:white;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:.25rem .8rem;border-radius:50px;margin-bottom:1rem;}
-.card-avatar{width:64px;height:64px;border-radius:16px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin-bottom:1rem;}
-.card-header h3{font-size:1.25rem;font-weight:800;color:white;}
-.card-header p{font-size:.85rem;color:rgba(255,255,255,.75);margin-top:.3rem;}
-.card-body{padding:1.5rem 2rem 2rem;background:white;}
-.card-body ul{list-style:none;display:flex;flex-direction:column;gap:.7rem;}
-.card-body li{display:flex;align-items:flex-start;gap:.7rem;font-size:.875rem;color:#374151;}
-.card-body li::before{content:'✓';color:#346739;font-weight:800;margin-top:.05rem;flex-shrink:0;}
-
-/* KONTAK */
-#kontak{background:linear-gradient(135deg,#1e4022,#346739);padding:90px 5%;}
-.kontak-inner{max-width:700px;margin:0 auto;text-align:center;}
-.kontak-inner .section-title{color:white;}
-.kontak-inner .section-desc{color:rgba(255,255,255,.7);margin:0 auto 2.5rem;}
-.kontak-form{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:2.5rem;}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;}
-.form-group{display:flex;flex-direction:column;gap:.4rem;}
-.form-group label{font-size:.8rem;font-weight:600;color:rgba(255,255,255,.7);text-align:left;}
-.form-group input,.form-group textarea{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:.75rem 1rem;color:white;font-family:inherit;font-size:.9rem;outline:none;transition:.2s;}
-.form-group input::placeholder,.form-group textarea::placeholder{color:rgba(255,255,255,.35);}
-.form-group input:focus,.form-group textarea:focus{border-color:#9FCB98;background:rgba(255,255,255,.15);}
-.form-group.full{grid-column:1/-1;}
-.form-group textarea{resize:vertical;min-height:120px;}
-.btn-submit{width:100%;background:#ffffff;color:#346739;padding:.85rem;border:none;border-radius:10px;font-family:inherit;font-size:1rem;font-weight:700;cursor:pointer;transition:.2s;margin-top:.5rem;box-shadow:0 2px 12px rgba(0,0,0,.15);}
-.btn-submit:hover{background:#f0faf0;transform:translateY(-1px);box-shadow:0 4px 20px rgba(0,0,0,.2);}
-
-/* FOOTER */
-footer{background:#0e1f10;padding:2rem 5%;text-align:center;color:rgba(255,255,255,.4);font-size:.8rem;}
-footer span{color:#9FCB98;}
-
-/* RESPONSIVE */
-@media(max-width:768px){
-  .perkantas-grid{grid-template-columns:1fr;}
-  .form-row{grid-template-columns:1fr;}
-  .nav-links a:not(.btn-login){display:none;}
-}
-</style>
+<link rel="stylesheet" href="{{ asset('css/landing.css') }}">
 </head>
+
 <body>
 
 <!-- NAVBAR -->
@@ -179,7 +48,7 @@ footer span{color:#9FCB98;}
     <div class="perkantas-img-box">
       <div class="perkantas-card-big">
         <h3>Perkantas</h3>
-        <p>Persekutuan Kristen Antar Universitas — gerakan mahasiswa Kristen yang hadir untuk menjangkau, membangun, dan mengutus mahasiswa di kampus-kampus Indonesia.</p>
+        <p>Persekutuan Kristen Antar Universitas &mdash; gerakan mahasiswa Kristen yang hadir untuk menjangkau, membangun, dan mengutus mahasiswa di kampus-kampus Indonesia.</p>
         <div class="perkantas-stats">
           <div class="stat-item"><div class="stat-num">14+</div><div class="stat-label">Kampus di Surabaya</div></div>
           <div class="stat-item"><div class="stat-num">KTB</div><div class="stat-label">Metode Utama</div></div>
@@ -194,15 +63,15 @@ footer span{color:#9FCB98;}
       <p class="section-desc">Perkantas (Persekutuan Kristen Antar Universitas) adalah organisasi pelayanan mahasiswa Kristen yang berfokus pada pertumbuhan iman melalui komunitas kecil yang intim dan penuh kasih.</p>
       <div class="perkantas-values">
         <div class="value-item">
-          <div class="value-icon">🕊️</div>
+          <div class="value-icon">&#128330;&#65039;</div>
           <div><h4>Misi & Visi</h4><p>Menjangkau mahasiswa dengan Injil dan membangun pemimpin Kristen yang berkarakter Kristus.</p></div>
         </div>
         <div class="value-item">
-          <div class="value-icon">📖</div>
+          <div class="value-icon">&#128214;</div>
           <div><h4>Pendalaman Alkitab</h4><p>Belajar Firman Tuhan bersama dalam kelompok kecil yang saling menopang dan mendukung.</p></div>
         </div>
         <div class="value-item">
-          <div class="value-icon">🤝</div>
+          <div class="value-icon">&#129309;</div>
           <div><h4>Komunitas Nyata</h4><p>Membangun relasi yang tulus antar mahasiswa Kristen lintas kampus di Surabaya.</p></div>
         </div>
       </div>
@@ -216,7 +85,7 @@ footer span{color:#9FCB98;}
     <div class="ktb-header">
       <h2 class="section-title">Apa itu <span>KTB?</span></h2>
       <div class="divider" style="margin:1rem auto;"></div>
-      <p class="section-desc">Kelompok Tumbuh Bersama (KTB) adalah kelompok kecil beranggotakan 2–9 orang yang bertemu secara rutin untuk membahas bahan kekristenan, berdoa, dan bertumbuh bersama dalam iman.</p>
+      <p class="section-desc">Kelompok Tumbuh Bersama (KTB) adalah kelompok kecil beranggotakan 2&ndash;9 orang yang bertemu secara rutin untuk membahas bahan kekristenan, berdoa, dan bertumbuh bersama dalam iman.</p>
     </div>
     <div class="ktb-flow">
       <div class="ktb-step">
@@ -242,7 +111,7 @@ footer span{color:#9FCB98;}
     </div>
     <div class="ktb-quote">
       <blockquote>"Besi menajamkan besi, orang menajamkan sesamanya."</blockquote>
-      <cite>— Amsal 27:17</cite>
+      <cite>&mdash; Amsal 27:17</cite>
     </div>
   </div>
 </section>
@@ -258,7 +127,7 @@ footer span{color:#9FCB98;}
     <div class="profile-card card-pkk">
       <div class="card-header">
         <div class="card-role-badge">Pemimpin</div>
-        <div class="card-avatar">👑</div>
+        <div class="card-avatar">&#128081;</div>
         <h3>PKK</h3>
         <p>Pemimpin Kelompok Kecil</p>
       </div>
@@ -312,7 +181,115 @@ footer span{color:#9FCB98;}
   </div>
 </section>
 
-<!-- KONTAK -->
+<!-- VOICE OF STUDENT -->
+<section id="vos">
+  <div class="vos-header">
+    <div class="section-tag">Dari Mereka</div>
+    <h2 class="section-title">Voice of <span>Student</span></h2>
+    <div class="divider" style="margin:1rem auto;"></div>
+    <p class="section-desc">Kesaksian nyata dari mahasiswa yang mengalami pertumbuhan iman bersama Perkantas Surabaya. <a href="https://www.instagram.com/pmkkotasurabaya" target="_blank" style="color:#346739;font-weight:600;">@pmkkotasurabaya</a></p>
+  </div>
+  <div class="vos-track-wrap">
+    <div class="vos-track">
+
+      {{-- 1. Calvin (Terbaru) - DWlJNJgEzc0 --}}
+      <div class="vos-card">
+        <img class="vos-img" src="{{ asset('images/vos/vos_calvin.jpg') }}" alt="Voice of Student - Calvin" loading="lazy">
+        <div class="vos-body">
+          <div class="vos-badge"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>Voice of Student</div>
+          <div class="vos-name">Calvin &mdash; Telkom University Surabaya</div>
+          <div class="vos-excerpt">Calvin mulai mengenal Kristus sejak kecil, namun sempat menyadari hanya mengenal Yesus secara pengetahuan. Melalui komunitas mahasiswa Kristen, ia belajar bahwa menjadi pengikut Kristus berarti hidup dalam ketaatan dan berani bersaksi.</div>
+          <a class="vos-link" href="https://www.instagram.com/p/DWlJNJgEzc0/" target="_blank">Baca ceritanya <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+        </div>
+      </div>
+
+      {{-- 2. Natanael - DVxTX2Ok50_ --}}
+      <div class="vos-card">
+        <img class="vos-img" src="{{ asset('images/vos/vos_natanael.jpg') }}" alt="Voice of Student - Natanael" loading="lazy">
+        <div class="vos-body">
+          <div class="vos-badge"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>Voice of Student</div>
+          <div class="vos-name">Natanael &mdash; Telkom University Surabaya</div>
+          <div class="vos-excerpt">Dulu sering mempertanyakan arti hidup dan mencari kepuasan dari banyak hal yang terasa kosong. Melalui persekutuan dan pelayanan Misi, ia menemukan bahwa hanya di dalam Kristus hidupnya bermakna.</div>
+          <a class="vos-link" href="https://www.instagram.com/p/DVxTX2Ok50_/" target="_blank">Baca ceritanya <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+        </div>
+      </div>
+
+      {{-- 3. Gabriel - DVhdlnKE_P5 --}}
+      <div class="vos-card">
+        <img class="vos-img" src="{{ asset('images/vos/vos_gabriel.jpg') }}" alt="Voice of Student - Gabriel" loading="lazy">
+        <div class="vos-body">
+          <div class="vos-badge"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>Voice of Student</div>
+          <div class="vos-name">Gabriel &mdash; Telkom University Surabaya</div>
+          <div class="vos-excerpt">Sempat mengalami pergumulan dan jatuh bangun dalam dosa. Melalui pelayanan Divisi Visitasi dan KTB, Tuhan memulihkan hidupnya. Kini dipercaya sebagai Koordinator Divisi Visitasi 2026.</div>
+          <a class="vos-link" href="https://www.instagram.com/p/DVhdlnKE_P5/" target="_blank">Baca ceritanya <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+        </div>
+      </div>
+
+      {{-- 4. Theo - DU-Bc3YErOK --}}
+      <div class="vos-card">
+        <img class="vos-img" src="{{ asset('images/vos/vos_theo.jpg') }}" alt="Voice of Student - Theo" loading="lazy">
+        <div class="vos-body">
+          <div class="vos-badge"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>Voice of Student</div>
+          <div class="vos-name">Theo &mdash; Universitas Negeri Surabaya</div>
+          <div class="vos-excerpt">Merasa hidupnya sudah "aman" karena lahir di keluarga rohani. Namun lewat KTB, Tuhan membongkar "topeng rohani" yang ia pakai dan mengajarkan bahwa kepemimpinan sejati adalah kesetiaan, bukan ketenaran.</div>
+          <a class="vos-link" href="https://www.instagram.com/p/DU-Bc3YErOK/" target="_blank">Baca ceritanya <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+        </div>
+      </div>
+
+      {{-- 5. Marvin - DUNFlOyEnbt --}}
+      <div class="vos-card">
+        <img class="vos-img" src="{{ asset('images/vos/vos_marvin.jpg') }}" alt="Voice of Student - Marvin" loading="lazy">
+        <div class="vos-body">
+          <div class="vos-badge"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>Voice of Student</div>
+          <div class="vos-name">Marvin &mdash; Universitas Negeri Surabaya</div>
+          <div class="vos-excerpt">Menemukan makna baru tentang tujuan hidup lewat pemuridan. Melalui KTB, ia belajar bahwa tujuan sejati bukan pencapaian pribadi, melainkan menjadi murid Kristus yang memuridkan orang lain.</div>
+          <a class="vos-link" href="https://www.instagram.com/p/DUNFlOyEnbt/" target="_blank">Baca ceritanya <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+        </div>
+      </div>
+
+      {{-- 6. Ina - DPJLIZ0Ehao --}}
+      <div class="vos-card">
+        <img class="vos-img" src="{{ asset('images/vos/vos_ina.jpg') }}" alt="Voice of Student - Ina" loading="lazy">
+        <div class="vos-body">
+          <div class="vos-badge"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>Voice of Student</div>
+          <div class="vos-name">Ina &mdash; Mahasiswi PMK Surabaya</div>
+          <div class="vos-excerpt">Awalnya ragu ikut KTB karena takut mengganggu kuliah. Lewat perhatian para kakak, ia berani melangkah dan merasakan kasih yang nyata &mdash; belajar konsisten saat teduh dan bertumbuh sedikit demi sedikit.</div>
+          <a class="vos-link" href="https://www.instagram.com/p/DPJLIZ0Ehao/" target="_blank">Baca ceritanya <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+        </div>
+      </div>
+
+      {{-- 7. Naomi - DM-gjRnSh0J --}}
+      <div class="vos-card">
+        <img class="vos-img" src="{{ asset('images/vos/vos_naomi.jpg') }}" alt="Voice of Student - Naomi" loading="lazy">
+        <div class="vos-body">
+          <div class="vos-badge"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>Voice of Student</div>
+          <div class="vos-name">Naomi &mdash; Mahasiswi PMK Surabaya</div>
+          <div class="vos-excerpt">Sejak kecil mengenal pemuridan dan mengalami kasih Tuhan secara pribadi. Kesaksiannya menegaskan: iman bukan sekadar pengetahuan, tapi perjumpaan pribadi yang nyata dengan Tuhan.</div>
+          <a class="vos-link" href="https://www.instagram.com/p/DM-gjRnSh0J/" target="_blank">Baca ceritanya <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+        </div>
+      </div>
+
+      {{-- 8. Voice of Student Perdana (Terlama) - DKXTLpnyB1N --}}
+      <div class="vos-card">
+        <img class="vos-img" src="{{ asset('images/vos/vos_perdana.jpg') }}" alt="Voice of Student - Perdana" loading="lazy">
+        <div class="vos-body">
+          <div class="vos-badge"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>Voice of Student</div>
+          <div class="vos-name">Voice of Student &mdash; Perdana</div>
+          <div class="vos-excerpt">Awal mula seri Voice of Student dari PMK Kota Surabaya &mdash; ajakan untuk berbagi cerita kasih dan bagaimana Tuhan bekerja dalam kehidupan setiap mahasiswa Kristen di Surabaya.</div>
+          <a class="vos-link" href="https://www.instagram.com/p/DKXTLpnyB1N/" target="_blank">Baca ceritanya <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:2rem;">
+    <a href="https://www.instagram.com/pmkkotasurabaya" target="_blank" style="display:inline-flex;align-items:center;gap:.6rem;background:#346739;color:#fff;padding:.75rem 1.8rem;border-radius:10px;font-weight:700;text-decoration:none;font-size:.9rem;transition:.2s;" onmouseover="this.style.background='#79AE6F'" onmouseout="this.style.background='#346739'">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+      Lihat Semua di Instagram
+    </a>
+  </div>
+</section>
+
 <section id="kontak">
   <div class="kontak-inner">
     <h2 class="section-title">Kontak Kami</h2>
@@ -330,14 +307,14 @@ footer span{color:#9FCB98;}
       <div class="form-row">
         <div class="form-group full"><label>Pesan</label><textarea placeholder="Tulis pesanmu di sini..."></textarea></div>
       </div>
-      <button class="btn-submit">Kirim Pesan ✉️</button>
+      <button class="btn-submit">Kirim Pesan ✝‰ï¸</button>
     </div>
   </div>
 </section>
 
 <!-- FOOTER -->
 <footer>
-  <p>© 2025 <span>Jejak Murid</span> — Perkantas Surabaya. Dibuat dengan ❤️ untuk pelayanan mahasiswa.</p>
+  <p>&copy; 2025 <span>Jejak Murid</span> &mdash; Perkantas Surabaya. Dibuat dengan &#10084;&#65039; untuk pelayanan mahasiswa.</p>
 </footer>
 
 <script>
@@ -360,3 +337,4 @@ window.addEventListener('scroll',()=>{
 </script>
 </body>
 </html>
+
