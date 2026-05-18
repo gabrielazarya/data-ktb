@@ -42,6 +42,7 @@ Route::view('/widgets/info-box.html', 'static.widgets.info-box')->name('widgets.
 Route::view('/widgets/small-box.html', 'static.widgets.small-box')->name('widgets.small_box');
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Admin\PkkController;
 
 // Landing Page
 Route::view('/', 'landing')->name('landing');
@@ -57,5 +58,8 @@ Route::middleware(['auth'])->group(function () {
     Route::view('/admin/dashboard', 'admin.dashboard')->name('admin.dashboard');
     Route::view('/pkk/dashboard', 'pkk.dashboard')->name('pkk.dashboard');
     Route::view('/akk/dashboard', 'akk.dashboard')->name('akk.dashboard');
+    
+    // Fitur Pengelolaan PKK oleh Admin
+    Route::resource('pkk', PkkController::class);
 });
 
