@@ -14,8 +14,10 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            KampusSeeder::class,     // 1. Seed 14 kampus default
-            SuperAdminSeeder::class, // 2. Seed akun Super Admin
+            KampusSeeder::class,          // 1. Master kampus
+            RegioSeeder::class,           // 2. Master regio (Surabaya, Malang)
+            KategoriJurusanSeeder::class, // 3. Master 10 kategori jurusan
+            SuperAdminSeeder::class,      // 4. Akun Super Admin
         ]);
     }
 }

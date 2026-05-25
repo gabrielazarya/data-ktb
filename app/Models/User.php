@@ -45,6 +45,9 @@ class User extends Authenticatable
         'nama_lengkap',
         'tanggal_lahir',
         'kampus_id',
+        'regio_id',
+        'jurusan',
+        'kategori_jurusan_id',
         'angkatan',
         'role',
         'foto_profil',
@@ -122,5 +125,21 @@ class User extends Authenticatable
     public function kampus()
     {
         return $this->belongsTo(Kampus::class, 'kampus_id', 'kampus_id');
+    }
+
+    /**
+     * Regio (wilayah) user ini — Surabaya / Malang / dst
+     */
+    public function regio()
+    {
+        return $this->belongsTo(Regio::class, 'regio_id', 'regio_id');
+    }
+
+    /**
+     * Kategori jurusan user ini
+     */
+    public function kategoriJurusan()
+    {
+        return $this->belongsTo(KategoriJurusan::class, 'kategori_jurusan_id', 'kategori_jurusan_id');
     }
 }
