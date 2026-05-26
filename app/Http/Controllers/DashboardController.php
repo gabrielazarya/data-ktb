@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Kampus;
+use App\Models\KategoriJurusan;
+use App\Models\Regio;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -91,12 +93,18 @@ class DashboardController extends Controller
                 ? $this->adminMetrics($stats)
                 : $this->personalMetrics($user),
             'canSeeAdminData' => $canSeeAdminData,
+            'canManageData' => $this->canManageData($user),
             'roleCounts' => $stats['roleCounts'] ?? $this->blankRoleCounts(),
             'campusSummaries' => $canSeeAdminData ? $this->campusSummaries() : collect(),
             'userRows' => $canSeeAdminData ? $this->userRows() : collect(),
+            'pemuridanRows' => $canSeeAdminData ? $this->pemuridanRows() : collect(),
             'campusRoleGroups' => $campusRoleGroups,
             'treeGroups' => $treeGroups,
             'treeSearchNames' => $canSeeAdminData ? $this->treeSearchNames($treeGroups) : collect(),
+            'campusOptions' => $canSeeAdminData ? $this->campusOptions() : collect(),
+            'pkkOptions' => $canSeeAdminData ? $this->pkkOptions() : collect(),
+            'regioOptions' => $canSeeAdminData ? $this->regioOptions() : collect(),
+            'kategoriJurusanOptions' => $canSeeAdminData ? $this->kategoriJurusanOptions() : collect(),
         ];
     }
 
@@ -201,22 +209,47 @@ class DashboardController extends Controller
     private function userRows()
     {
         return User::query()
-            ->with('kampus')
+            ->with(['kampus', 'regio', 'kategoriJurusan', 'pkkLeader.kampus'])
             ->orderByDesc('created_at')
+            ->get();
+    }
+
+    private function pemuridanRows()
+    {
+        return User::query()
+            ->with(['kampus', 'regio', 'kategoriJurusan', 'pkkLeader.kampus'])
+            ->whereIn('role', ['pkk', 'akk'])
+            ->orderBy('role', 'desc')
+            ->orderBy('nama_lengkap')
             ->get();
     }
 
     private function campusRoleGroups()
     {
+        $allPkkUsers = User::query()
+            ->with(['kampus', 'regio', 'kategoriJurusan'])
+            ->where('role', 'pkk')
+            ->orderBy('nama_lengkap')
+            ->get();
+
+        $allAkkUsers = User::query()
+            ->with(['kampus', 'regio', 'kategoriJurusan', 'pkkLeader.kampus'])
+            ->where('role', 'akk')
+            ->orderBy('nama_lengkap')
+            ->get();
+
         $campuses = Kampus::query()
-            ->with(['users' => fn ($query) => $query
-                ->whereIn('role', ['pkk', 'akk'])
-                ->orderBy('nama_lengkap')])
             ->orderBy('nama_kampus')
             ->get()
-            ->map(function (Kampus $kampus): array {
-                $pkkUsers = $kampus->users->where('role', 'pkk')->values();
-                $akkUsers = $kampus->users->where('role', 'akk')->values();
+            ->map(function (Kampus $kampus) use ($allPkkUsers, $allAkkUsers): array {
+                $pkkUsers = $allPkkUsers->where('kampus_id', $kampus->kampus_id)->values();
+                $pkkIds = $pkkUsers->pluck('user_id');
+                $ledAkkUsers = $allAkkUsers->whereIn('pkk_id', $pkkIds)->values();
+                $unassignedAkkUsers = $allAkkUsers
+                    ->whereNull('pkk_id')
+                    ->where('kampus_id', $kampus->kampus_id)
+                    ->values();
+                $akkUsers = $ledAkkUsers->merge($unassignedAkkUsers)->unique('user_id')->values();
 
                 return [
                     'id' => 'kampus-'.$kampus->kampus_id,
@@ -226,35 +259,65 @@ class DashboardController extends Controller
                     'pkk' => $pkkUsers,
                     'akk' => $akkUsers,
                     'branches' => $this->buildPkkBranches($pkkUsers, $akkUsers),
-                    'unassigned_akk' => $pkkUsers->isEmpty() ? $akkUsers : collect(),
+                    'unassigned_akk' => $unassignedAkkUsers,
                     'total' => $pkkUsers->count() + $akkUsers->count(),
                 ];
             });
 
-        $unassignedUsers = User::query()
+        $unassignedPkkUsers = $allPkkUsers->whereNull('kampus_id')->values();
+        $unassignedPkkIds = $unassignedPkkUsers->pluck('user_id');
+        $unassignedAkkUsers = $allAkkUsers
+            ->whereNull('pkk_id')
             ->whereNull('kampus_id')
-            ->whereIn('role', ['pkk', 'akk'])
-            ->orderBy('nama_lengkap')
-            ->get();
+            ->values();
+        $ledAkkWithoutCampus = $allAkkUsers->whereIn('pkk_id', $unassignedPkkIds)->values();
+        $unassignedGroupAkkUsers = $ledAkkWithoutCampus->merge($unassignedAkkUsers)->unique('user_id')->values();
 
-        if ($unassignedUsers->isNotEmpty()) {
-            $pkkUsers = $unassignedUsers->where('role', 'pkk')->values();
-            $akkUsers = $unassignedUsers->where('role', 'akk')->values();
-
+        if ($unassignedPkkUsers->isNotEmpty() || $unassignedGroupAkkUsers->isNotEmpty()) {
             $campuses->push([
                 'id' => 'kampus-tanpa-kampus',
                 'name' => 'Tanpa Kampus',
                 'short' => '-',
                 'is_active' => false,
-                'pkk' => $pkkUsers,
-                'akk' => $akkUsers,
-                'branches' => $this->buildPkkBranches($pkkUsers, $akkUsers),
-                'unassigned_akk' => $pkkUsers->isEmpty() ? $akkUsers : collect(),
-                'total' => $pkkUsers->count() + $akkUsers->count(),
+                'pkk' => $unassignedPkkUsers,
+                'akk' => $unassignedGroupAkkUsers,
+                'branches' => $this->buildPkkBranches($unassignedPkkUsers, $unassignedGroupAkkUsers),
+                'unassigned_akk' => $unassignedAkkUsers,
+                'total' => $unassignedPkkUsers->count() + $unassignedGroupAkkUsers->count(),
             ]);
         }
 
         return $campuses;
+    }
+
+    private function campusOptions()
+    {
+        return Kampus::query()
+            ->orderBy('nama_kampus')
+            ->get();
+    }
+
+    private function pkkOptions()
+    {
+        return User::query()
+            ->with('kampus')
+            ->where('role', 'pkk')
+            ->orderBy('nama_lengkap')
+            ->get();
+    }
+
+    private function regioOptions()
+    {
+        return Regio::query()
+            ->orderBy('nama_regio')
+            ->get();
+    }
+
+    private function kategoriJurusanOptions()
+    {
+        return KategoriJurusan::query()
+            ->orderBy('nama_kategori')
+            ->get();
     }
 
     private function buildPkkBranches($pkkUsers, $akkUsers)
@@ -265,15 +328,8 @@ class DashboardController extends Controller
 
         $branches = $pkkUsers->map(fn (User $pkk): array => [
             'pkk' => $pkk,
-            'akk' => collect(),
+            'akk' => $akkUsers->where('pkk_id', $pkk->user_id)->values(),
         ]);
-
-        foreach ($akkUsers->values() as $index => $akk) {
-            $branchIndex = $index % $branches->count();
-            $branch = $branches->get($branchIndex);
-            $branch['akk']->push($akk);
-            $branches->put($branchIndex, $branch);
-        }
 
         return $branches->values();
     }
@@ -373,6 +429,11 @@ class DashboardController extends Controller
             'pkk' => 0,
             'akk' => 0,
         ];
+    }
+
+    private function canManageData(User $user): bool
+    {
+        return $user->isSuperAdmin() || $user->isAdminEditor();
     }
 
     private function routeForRole(string $role): string

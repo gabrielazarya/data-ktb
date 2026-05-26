@@ -50,6 +50,7 @@ class User extends Authenticatable
         'kategori_jurusan_id',
         'angkatan',
         'role',
+        'pkk_id',
         'foto_profil',
         'is_target',
         'admin_tipe',
@@ -141,5 +142,21 @@ class User extends Authenticatable
     public function kategoriJurusan()
     {
         return $this->belongsTo(KategoriJurusan::class, 'kategori_jurusan_id', 'kategori_jurusan_id');
+    }
+
+    /**
+     * PKK yang memimpin AKK ini
+     */
+    public function pkkLeader()
+    {
+        return $this->belongsTo(User::class, 'pkk_id', 'user_id');
+    }
+
+    /**
+     * Daftar AKK yang dipimpin oleh PKK ini
+     */
+    public function akkMembers()
+    {
+        return $this->hasMany(User::class, 'pkk_id', 'user_id');
     }
 }

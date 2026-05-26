@@ -11,6 +11,7 @@
   $kampusShort = $user->kampus?->singkatan ?: '-';
   $activePage = $activePage ?? 'dashboard';
   $maxRoleCount = max(array_values($roleCounts));
+  $oldFormRole = old('_form_role');
 @endphp
 <!doctype html>
 <html lang="id">
@@ -57,7 +58,8 @@
     }
 
     button,
-    input {
+    input,
+    select {
       font: inherit;
     }
 
@@ -183,6 +185,19 @@
       border-color: var(--gold);
       color: var(--navy);
       background: var(--gold-soft);
+    }
+
+    .btn.is-compact {
+      width: auto;
+      min-height: 34px;
+      padding: 7px 10px;
+      font-size: 13px;
+    }
+
+    .btn.is-danger:hover {
+      border-color: #f3b1aa;
+      color: var(--danger);
+      background: #fff1f0;
     }
 
     .main {
@@ -313,6 +328,196 @@
       box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
     }
 
+    .alert {
+      margin-bottom: 16px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--green-soft);
+      color: var(--green);
+      font-weight: 700;
+      line-height: 1.5;
+    }
+
+    .alert.is-danger {
+      background: #fff1f0;
+      color: var(--danger);
+      border-color: #f3b1aa;
+    }
+
+    .alert ul {
+      margin: 6px 0 0;
+      padding-left: 18px;
+      font-weight: 600;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: grid;
+      place-items: center;
+      padding: 22px;
+      background: rgba(15, 37, 68, 0.42);
+      overflow: auto;
+    }
+
+    .modal[hidden] {
+      display: none;
+    }
+
+    .modal-panel {
+      width: min(760px, 100%);
+      max-height: calc(100vh - 44px);
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 28px 70px rgba(15, 37, 68, 0.24);
+    }
+
+    .modal-panel.is-small {
+      width: min(460px, 100%);
+    }
+
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+      background: #f8fbf9;
+    }
+
+    .modal-head h2 {
+      margin: 4px 0 0;
+      color: var(--navy);
+      font-size: 1.15rem;
+      line-height: 1.25;
+    }
+
+    .modal-body {
+      padding: 18px;
+    }
+
+    .modal-close {
+      width: auto;
+      min-width: 38px;
+      min-height: 38px;
+      padding: 6px 10px;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    body.has-open-modal {
+      overflow: hidden;
+    }
+
+    .management-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .table-toolbar {
+      display: grid;
+      grid-template-columns: minmax(240px, 1.4fr) repeat(6, minmax(150px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+      align-items: end;
+    }
+
+    .table-toolbar .field {
+      gap: 5px;
+    }
+
+    .table-toolbar .search {
+      width: 100%;
+    }
+
+    .table-counter {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .form-grid .field.is-full {
+      grid-column: 1 / -1;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label,
+    .checkbox-field {
+      color: #344540;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      min-height: 40px;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+    }
+
+    .checkbox-field {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+    }
+
+    .checkbox-field input {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+    }
+
+    .form-actions,
+    .crud-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .form-actions .btn {
+      width: auto;
+    }
+
+    .inline-delete {
+      margin: 0;
+    }
+
+    .compact-edit-form {
+      margin: 0;
+    }
+
     .role-stack,
     .detail-list {
       display: grid;
@@ -386,6 +591,22 @@
     .table th {
       background: #f3f7f5;
       color: #344540;
+    }
+
+    .table.is-wide {
+      min-width: 1180px;
+    }
+
+    .table .cell-main {
+      display: grid;
+      gap: 4px;
+    }
+
+    .row-actions {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      flex-wrap: wrap;
     }
 
     .table tr:last-child td {
@@ -497,9 +718,19 @@
       display: flex;
       justify-content: space-between;
       gap: 12px;
-      align-items: center;
+      align-items: flex-start;
       padding: 10px 0;
       border-top: 1px solid var(--line);
+    }
+
+    .member-entry {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .member-list .crud-actions {
+      justify-content: flex-end;
+      margin-top: 0;
     }
 
     .member-list strong,
@@ -515,6 +746,16 @@
       margin-top: 3px;
       color: var(--muted);
       font-size: 12px;
+    }
+
+    .member-list .badge {
+      display: inline-flex;
+      margin-top: 0;
+      color: var(--green);
+    }
+
+    .member-list .badge.neutral {
+      color: var(--navy);
     }
 
     .tree-v2-surface {
@@ -758,7 +999,9 @@
 
     @media (max-width: 1040px) {
       .metric-grid,
-      .content-grid {
+      .content-grid,
+      .management-grid,
+      .table-toolbar {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
@@ -793,7 +1036,10 @@
       }
 
       .metric-grid,
-      .content-grid {
+      .content-grid,
+      .management-grid,
+      .table-toolbar,
+      .form-grid {
         grid-template-columns: 1fr;
       }
 
@@ -877,6 +1123,21 @@
         </div>
       </header>
 
+      @if (session('success'))
+        <div class="alert">{{ session('success') }}</div>
+      @endif
+
+      @if ($errors->any())
+        <div class="alert is-danger">
+          <strong>Data belum bisa disimpan.</strong>
+          <ul>
+            @foreach ($errors->all() as $error)
+              <li>{{ $error }}</li>
+            @endforeach
+          </ul>
+        </div>
+      @endif
+
       @if ($activePage === 'dashboard')
         <section class="metric-grid" aria-label="Ringkasan dashboard">
           @foreach ($metrics as $metric)
@@ -951,8 +1212,30 @@
               <span class="eyebrow">Ringkasan</span>
               <h2>Pengguna per Kampus</h2>
             </div>
-            <input class="search" type="search" placeholder="Cari kampus..." data-filter-table="campus-table" aria-label="Cari kampus">
+            <div class="row-actions">
+              <input class="search" type="search" placeholder="Cari kampus..." data-filter-table="campus-table" aria-label="Cari kampus">
+              @if ($canManageData)
+                <button class="btn is-compact" type="button" data-modal-open="modal-kampus-create">Tambah Kampus</button>
+              @endif
+            </div>
           </div>
+
+          @if ($canManageData)
+            <div class="modal" id="modal-kampus-create" hidden>
+              <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-kampus-create-title">
+                <div class="modal-head">
+                  <div>
+                    <span class="eyebrow">Tambah</span>
+                    <h2 id="modal-kampus-create-title">Kampus</h2>
+                  </div>
+                  <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+                </div>
+                <div class="modal-body">
+                  @include('dashboard.partials.kampus-form')
+                </div>
+              </div>
+            </div>
+          @endif
 
           @if ($campusSummaries->isEmpty())
             <div class="empty-state">Belum ada data kampus.</div>
@@ -967,6 +1250,9 @@
                     <th>Aktif</th>
                     <th>PKK</th>
                     <th>AKK</th>
+                    @if ($canManageData)
+                      <th>Aksi</th>
+                    @endif
                   </tr>
                 </thead>
                 <tbody>
@@ -985,6 +1271,52 @@
                       <td>{{ number_format($kampus->active_users, 0, ',', '.') }}</td>
                       <td>{{ number_format($kampus->pkk_users, 0, ',', '.') }}</td>
                       <td>{{ number_format($kampus->akk_users, 0, ',', '.') }}</td>
+                      @if ($canManageData)
+                        <td>
+                          <div class="row-actions">
+                            <button class="btn is-compact" type="button" data-modal-open="modal-kampus-edit-{{ $kampus->kampus_id }}">Edit</button>
+                            <button class="btn is-compact is-danger" type="button" data-modal-open="modal-kampus-delete-{{ $kampus->kampus_id }}">Hapus</button>
+                          </div>
+
+                          <div class="modal" id="modal-kampus-edit-{{ $kampus->kampus_id }}" hidden>
+                            <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-kampus-edit-title-{{ $kampus->kampus_id }}">
+                              <div class="modal-head">
+                                <div>
+                                  <span class="eyebrow">Edit</span>
+                                  <h2 id="modal-kampus-edit-title-{{ $kampus->kampus_id }}">{{ $kampus->nama_kampus }}</h2>
+                                </div>
+                                <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+                              </div>
+                              <div class="modal-body">
+                                @include('dashboard.partials.kampus-form', ['kampus' => $kampus])
+                              </div>
+                            </div>
+                          </div>
+
+                          <div class="modal" id="modal-kampus-delete-{{ $kampus->kampus_id }}" hidden>
+                            <div class="modal-panel is-small" role="dialog" aria-modal="true" aria-labelledby="modal-kampus-delete-title-{{ $kampus->kampus_id }}">
+                              <div class="modal-head">
+                                <div>
+                                  <span class="eyebrow">Hapus</span>
+                                  <h2 id="modal-kampus-delete-title-{{ $kampus->kampus_id }}">Kampus</h2>
+                                </div>
+                                <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+                              </div>
+                              <div class="modal-body">
+                                <p class="muted">Hapus {{ $kampus->nama_kampus }}? Pengguna terkait akan menjadi tanpa kampus.</p>
+                                <form method="POST" action="{{ route('dashboard.kampus.destroy', $kampus) }}" class="inline-delete">
+                                  @csrf
+                                  @method('DELETE')
+                                  <div class="form-actions">
+                                    <button class="btn is-compact is-danger" type="submit">Hapus Kampus</button>
+                                    <button class="btn is-compact" type="button" data-modal-close>Batal</button>
+                                  </div>
+                                </form>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      @endif
                     </tr>
                   @endforeach
                 </tbody>
@@ -1046,71 +1378,276 @@
           @endif
         </section>
       @elseif ($activePage === 'pemuridan' && $canSeeAdminData)
-        <div class="page-actions">
-          <input class="search" type="search" placeholder="Cari kampus, PKK, AKK..." data-filter-block=".campus-role-card" aria-label="Cari data pemuridan">
-        </div>
+        @if ($canManageData)
+          <div class="page-actions">
+            <button class="btn is-compact" type="button" data-modal-open="modal-pkk-create">Tambah PKK</button>
+            <button class="btn is-compact" type="button" data-modal-open="modal-akk-create">Tambah AKK</button>
+          </div>
 
-        @if ($campusRoleGroups->isEmpty())
-          <div class="empty-state">Belum ada data kampus.</div>
-        @else
-          <section class="campus-role-grid" aria-label="Daftar AKK dan PKK per kampus">
-            @foreach ($campusRoleGroups as $group)
-              <article class="campus-role-card" data-filter-text="{{ $group['name'] }} {{ $group['short'] }} {{ $group['pkk']->pluck('nama_lengkap')->join(' ') }} {{ $group['akk']->pluck('nama_lengkap')->join(' ') }}">
-                <header class="campus-role-head">
-                  <div>
-                    <span class="eyebrow">{{ $group['short'] }}</span>
-                    <h2>{{ $group['name'] }}</h2>
-                    <span class="muted">{{ $group['is_active'] ? 'Kampus aktif' : 'Kampus nonaktif' }}</span>
-                  </div>
-                  <div class="campus-role-counts">
-                    <span class="badge neutral">{{ number_format($group['pkk']->count(), 0, ',', '.') }} PKK</span>
-                    <span class="badge">{{ number_format($group['akk']->count(), 0, ',', '.') }} AKK</span>
-                  </div>
-                </header>
-
-                <div class="role-columns">
-                  <section class="role-column">
-                    <h3>PKK</h3>
-                    @if ($group['pkk']->isEmpty())
-                      <div class="empty-state">Belum ada PKK.</div>
-                    @else
-                      <ul class="member-list">
-                        @foreach ($group['pkk'] as $row)
-                          <li>
-                            <div>
-                              <strong>{{ $row->nama_lengkap }}</strong>
-                              <span>{{ $row->username }}{{ $row->angkatan ? ' - '.$row->angkatan : '' }}</span>
-                            </div>
-                            <span class="badge neutral">{{ $row->is_target ? 'Target' : 'PKK' }}</span>
-                          </li>
-                        @endforeach
-                      </ul>
-                    @endif
-                  </section>
-
-                  <section class="role-column">
-                    <h3>AKK</h3>
-                    @if ($group['akk']->isEmpty())
-                      <div class="empty-state">Belum ada AKK.</div>
-                    @else
-                      <ul class="member-list">
-                        @foreach ($group['akk'] as $row)
-                          <li>
-                            <div>
-                              <strong>{{ $row->nama_lengkap }}</strong>
-                              <span>{{ $row->username }}{{ $row->angkatan ? ' - '.$row->angkatan : '' }}</span>
-                            </div>
-                            <span class="badge">AKK</span>
-                          </li>
-                        @endforeach
-                      </ul>
-                    @endif
-                  </section>
+          <div class="modal" id="modal-pkk-create" hidden>
+            <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-pkk-create-title">
+              <div class="modal-head">
+                <div>
+                  <span class="eyebrow">Tambah</span>
+                  <h2 id="modal-pkk-create-title">PKK</h2>
                 </div>
-              </article>
-            @endforeach
-          </section>
+                <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+              </div>
+              <div class="modal-body">
+                @include('dashboard.partials.pemuridan-create-form', ['role' => 'pkk'])
+              </div>
+            </div>
+          </div>
+
+          <div class="modal" id="modal-akk-create" hidden>
+            <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-akk-create-title">
+              <div class="modal-head">
+                <div>
+                  <span class="eyebrow">Tambah</span>
+                  <h2 id="modal-akk-create-title">AKK</h2>
+                </div>
+                <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+              </div>
+              <div class="modal-body">
+                @include('dashboard.partials.pemuridan-create-form', ['role' => 'akk'])
+              </div>
+            </div>
+          </div>
         @endif
+
+        @php
+          $pemuridanAngkatanOptions = $pemuridanRows->pluck('angkatan')->filter()->unique()->sort()->values();
+        @endphp
+
+        <section class="panel" id="data-pemuridan">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">Direktori</span>
+              <h2>Data AKK dan PKK</h2>
+            </div>
+          </div>
+
+          @if ($pemuridanRows->isEmpty())
+            <div class="empty-state">Belum ada data PKK atau AKK.</div>
+          @else
+            <div class="table-toolbar" data-filter-panel="pemuridan-table">
+              <div class="field">
+                <label for="pemuridan-search">Cari</label>
+                <input id="pemuridan-search" class="search" type="search" placeholder="Nama, username, kampus, jurusan..." data-column-filter="search" aria-label="Cari data AKK dan PKK">
+              </div>
+              <div class="field">
+                <label for="pemuridan-role-filter">Role</label>
+                <select id="pemuridan-role-filter" data-column-filter="role">
+                  <option value="">Semua role</option>
+                  <option value="pkk">PKK</option>
+                  <option value="akk">AKK</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="pemuridan-campus-filter">Kampus</label>
+                <select id="pemuridan-campus-filter" data-column-filter="campus">
+                  <option value="">Semua kampus</option>
+                  <option value="none">Tanpa kampus</option>
+                  @foreach ($campusOptions as $option)
+                    <option value="{{ $option->kampus_id }}">{{ $option->nama_kampus }}{{ $option->singkatan ? ' ('.$option->singkatan.')' : '' }}</option>
+                  @endforeach
+                </select>
+              </div>
+              <div class="field">
+                <label for="pemuridan-pkk-filter">Pemimpin PKK</label>
+                <select id="pemuridan-pkk-filter" data-column-filter="leader">
+                  <option value="">Semua pemimpin</option>
+                  <option value="none">Belum dihubungkan</option>
+                  @foreach ($pkkOptions as $option)
+                    <option value="{{ $option->user_id }}">{{ $option->nama_lengkap }}{{ $option->kampus?->singkatan ? ' - '.$option->kampus->singkatan : '' }}</option>
+                  @endforeach
+                </select>
+              </div>
+              <div class="field">
+                <label for="pemuridan-angkatan-filter">Angkatan</label>
+                <select id="pemuridan-angkatan-filter" data-column-filter="angkatan">
+                  <option value="">Semua angkatan</option>
+                  <option value="none">Tanpa angkatan</option>
+                  @foreach ($pemuridanAngkatanOptions as $angkatan)
+                    <option value="{{ $angkatan }}">{{ $angkatan }}</option>
+                  @endforeach
+                </select>
+              </div>
+              <div class="field">
+                <label for="pemuridan-target-filter">Target</label>
+                <select id="pemuridan-target-filter" data-column-filter="target">
+                  <option value="">Semua target</option>
+                  <option value="target">Target</option>
+                  <option value="non-target">Non-target</option>
+                  <option value="none">Tidak berlaku</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="pemuridan-status-filter">Status</label>
+                <select id="pemuridan-status-filter" data-column-filter="status">
+                  <option value="">Semua status</option>
+                  <option value="aktif">Aktif</option>
+                  <option value="nonaktif">Nonaktif</option>
+                </select>
+              </div>
+            </div>
+
+            <p class="table-counter" data-filter-counter="pemuridan-table">
+              Menampilkan {{ number_format($pemuridanRows->count(), 0, ',', '.') }} data.
+            </p>
+
+            <div class="table-wrap">
+              <table class="table is-wide" id="pemuridan-table">
+                <thead>
+                  <tr>
+                    <th>Nama</th>
+                    <th>Role</th>
+                    <th>Pemimpin PKK</th>
+                    <th>Kampus</th>
+                    <th>Regio / Jurusan</th>
+                    <th>Angkatan</th>
+                    <th>Target</th>
+                    <th>Status</th>
+                    @if ($canManageData)
+                      <th>Aksi</th>
+                    @endif
+                  </tr>
+                </thead>
+                <tbody>
+                  @foreach ($pemuridanRows as $row)
+                    @php
+                      $targetValue = $row->role === 'pkk' ? ($row->is_target ? 'target' : 'non-target') : 'none';
+                      $searchText = collect([
+                        $row->nama_lengkap,
+                        $row->username,
+                        $roleNames[$row->role] ?? strtoupper($row->role),
+                        $row->pkkLeader?->nama_lengkap,
+                        $row->pkkLeader?->kampus?->singkatan,
+                        $row->kampus?->nama_kampus,
+                        $row->kampus?->singkatan,
+                        $row->regio?->nama_regio,
+                        $row->jurusan,
+                        $row->kategoriJurusan?->nama_kategori,
+                        $row->angkatan,
+                        $row->is_active ? 'Aktif' : 'Nonaktif',
+                        $targetValue === 'target' ? 'Target' : ($targetValue === 'non-target' ? 'Non-target' : ''),
+                      ])->filter()->join(' ');
+                      $deleteRouteName = $row->role === 'pkk' ? 'dashboard.pkk.destroy' : 'dashboard.akk.destroy';
+                    @endphp
+                    <tr
+                      data-filter-row
+                      data-search-text="{{ $searchText }}"
+                      data-role="{{ $row->role }}"
+                      data-leader="{{ $row->role === 'akk' ? ($row->pkk_id ?: 'none') : 'self' }}"
+                      data-campus="{{ $row->kampus_id ?: 'none' }}"
+                      data-angkatan="{{ $row->angkatan ?: 'none' }}"
+                      data-target="{{ $targetValue }}"
+                      data-status="{{ $row->is_active ? 'aktif' : 'nonaktif' }}"
+                    >
+                      <td>
+                        <div class="cell-main">
+                          <strong>{{ $row->nama_lengkap }}</strong>
+                          <span class="muted">{{ $row->username }}</span>
+                        </div>
+                      </td>
+                      <td><span class="badge {{ $row->role === 'pkk' ? 'neutral' : '' }}">{{ $roleNames[$row->role] ?? strtoupper($row->role) }}</span></td>
+                      <td>
+                        @if ($row->role === 'akk')
+                          <div class="cell-main">
+                            <strong>{{ $row->pkkLeader?->nama_lengkap ?: '-' }}</strong>
+                            <span class="muted">{{ $row->pkkLeader?->kampus?->singkatan ?: 'Belum dihubungkan' }}</span>
+                          </div>
+                        @else
+                          -
+                        @endif
+                      </td>
+                      <td>
+                        <div class="cell-main">
+                          <strong>{{ $row->kampus?->singkatan ?: '-' }}</strong>
+                          <span class="muted">{{ $row->kampus?->nama_kampus ?: 'Tanpa kampus' }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="cell-main">
+                          <strong>{{ $row->regio?->nama_regio ?: '-' }}</strong>
+                          <span class="muted">{{ $row->jurusan ?: 'Jurusan belum diisi' }}</span>
+                          @if ($row->kategoriJurusan)
+                            <span class="muted">{{ $row->kategoriJurusan->nama_kategori }}</span>
+                          @endif
+                        </div>
+                      </td>
+                      <td>{{ $row->angkatan ?: '-' }}</td>
+                      <td>
+                        @if ($row->role === 'pkk')
+                          {{ $row->is_target ? 'Ya' : 'Tidak' }}
+                        @else
+                          -
+                        @endif
+                      </td>
+                      <td>
+                        <span class="badge {{ $row->is_active ? '' : 'warning' }}">
+                          {{ $row->is_active ? 'Aktif' : 'Nonaktif' }}
+                        </span>
+                      </td>
+                      @if ($canManageData)
+                        <td>
+                          <div class="row-actions">
+                            <button class="btn is-compact" type="button" data-modal-open="modal-pemuridan-edit-{{ $row->user_id }}">Edit</button>
+                            <button class="btn is-compact is-danger" type="button" data-modal-open="modal-pemuridan-delete-{{ $row->user_id }}">Hapus</button>
+                          </div>
+
+                          <div class="modal" id="modal-pemuridan-edit-{{ $row->user_id }}" hidden>
+                            <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-pemuridan-edit-title-{{ $row->user_id }}">
+                              <div class="modal-head">
+                                <div>
+                                  <span class="eyebrow">Edit {{ strtoupper($row->role) }}</span>
+                                  <h2 id="modal-pemuridan-edit-title-{{ $row->user_id }}">{{ $row->nama_lengkap }}</h2>
+                                </div>
+                                <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+                              </div>
+                              <div class="modal-body">
+                                @include('dashboard.partials.pemuridan-edit-form', ['row' => $row])
+                              </div>
+                            </div>
+                          </div>
+
+                          <div class="modal" id="modal-pemuridan-delete-{{ $row->user_id }}" hidden>
+                            <div class="modal-panel is-small" role="dialog" aria-modal="true" aria-labelledby="modal-pemuridan-delete-title-{{ $row->user_id }}">
+                              <div class="modal-head">
+                                <div>
+                                  <span class="eyebrow">Hapus {{ strtoupper($row->role) }}</span>
+                                  <h2 id="modal-pemuridan-delete-title-{{ $row->user_id }}">{{ $row->nama_lengkap }}</h2>
+                                </div>
+                                <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+                              </div>
+                              <div class="modal-body">
+                                <p class="muted">Hapus data {{ strtoupper($row->role) }} ini dari Sistem KTB?</p>
+                                <form method="POST" action="{{ route($deleteRouteName, $row) }}" class="inline-delete">
+                                  @csrf
+                                  @method('DELETE')
+                                  <div class="form-actions">
+                                    <button class="btn is-compact is-danger" type="submit">Hapus {{ strtoupper($row->role) }}</button>
+                                    <button class="btn is-compact" type="button" data-modal-close>Batal</button>
+                                  </div>
+                                </form>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      @endif
+                    </tr>
+                  @endforeach
+                  <tr data-filter-empty-row hidden>
+                    <td colspan="{{ $canManageData ? 9 : 8 }}">
+                      <div class="empty-state">Tidak ada data yang cocok dengan filter.</div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          @endif
+        </section>
+
       @elseif ($activePage === 'pohon' && $canSeeAdminData)
         <section class="tree-v2-surface">
           @if ($treeGroups->isEmpty())
@@ -1214,6 +1751,66 @@
   </div>
 
   <script>
+    var activeModal = null;
+    var lastModalTrigger = null;
+
+    function openModal(modal, trigger) {
+      if (!modal) return;
+      lastModalTrigger = trigger || document.activeElement;
+      modal.hidden = false;
+      activeModal = modal;
+      document.body.classList.add('has-open-modal');
+
+      var firstInput = modal.querySelector('.modal-body input:not([type="hidden"]), .modal-body select, .modal-body textarea, .modal-body button');
+      if (firstInput) {
+        firstInput.focus({ preventScroll: true });
+      }
+    }
+
+    function closeModal(modal) {
+      if (!modal) return;
+      modal.hidden = true;
+      if (activeModal === modal) {
+        activeModal = null;
+      }
+      if (!document.querySelector('.modal:not([hidden])')) {
+        document.body.classList.remove('has-open-modal');
+      }
+      if (lastModalTrigger && typeof lastModalTrigger.focus === 'function') {
+        lastModalTrigger.focus({ preventScroll: true });
+      }
+    }
+
+    document.querySelectorAll('[data-modal-open]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        openModal(document.getElementById(button.getAttribute('data-modal-open')), button);
+      });
+    });
+
+    document.querySelectorAll('[data-modal-close]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        closeModal(button.closest('.modal'));
+      });
+    });
+
+    document.querySelectorAll('.modal').forEach(function (modal) {
+      modal.addEventListener('mousedown', function (event) {
+        if (event.target === modal) {
+          closeModal(modal);
+        }
+      });
+    });
+
+    window.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && activeModal) {
+        closeModal(activeModal);
+      }
+    });
+
+    @if ($errors->any() && old('_modal_id'))
+      openModal(document.getElementById(@json(old('_modal_id'))));
+    @endif
+
     document.querySelectorAll('[data-filter-table]').forEach(function (input) {
       input.addEventListener('input', function () {
         var table = document.getElementById(input.getAttribute('data-filter-table'));
@@ -1224,6 +1821,53 @@
           row.hidden = query !== '' && !row.textContent.toLowerCase().includes(query);
         });
       });
+    });
+
+    document.querySelectorAll('[data-filter-panel]').forEach(function (panel) {
+      var table = document.getElementById(panel.getAttribute('data-filter-panel'));
+      if (!table) return;
+
+      var controls = Array.prototype.slice.call(panel.querySelectorAll('[data-column-filter]'));
+      var rows = Array.prototype.slice.call(table.querySelectorAll('tbody tr[data-filter-row]'));
+      var emptyRow = table.querySelector('[data-filter-empty-row]');
+      var counter = document.querySelector('[data-filter-counter="' + table.id + '"]');
+
+      function applyColumnFilters() {
+        var visibleRows = 0;
+
+        rows.forEach(function (row) {
+          var isVisible = controls.every(function (control) {
+            var key = control.getAttribute('data-column-filter');
+            var value = control.value.trim().toLowerCase();
+
+            if (!value) return true;
+
+            if (key === 'search') {
+              return (row.getAttribute('data-search-text') || '').toLowerCase().includes(value);
+            }
+
+            return (row.getAttribute('data-' + key) || '').toLowerCase() === value;
+          });
+
+          row.hidden = !isVisible;
+          if (isVisible) visibleRows++;
+        });
+
+        if (emptyRow) {
+          emptyRow.hidden = visibleRows > 0;
+        }
+
+        if (counter) {
+          counter.textContent = 'Menampilkan ' + visibleRows.toLocaleString('id-ID') + ' dari ' + rows.length.toLocaleString('id-ID') + ' data.';
+        }
+      }
+
+      controls.forEach(function (control) {
+        control.addEventListener('input', applyColumnFilters);
+        control.addEventListener('change', applyColumnFilters);
+      });
+
+      applyColumnFilters();
     });
 
     document.querySelectorAll('[data-filter-block]').forEach(function (input) {
