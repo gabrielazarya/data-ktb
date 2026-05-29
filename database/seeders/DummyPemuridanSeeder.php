@@ -21,8 +21,8 @@ class DummyPemuridanSeeder extends Seeder
         $campusData = [
             'TUS' => [
                 'pkk' => [
-                    ['username' => 'pkk_tus_01', 'nama_lengkap' => 'Maria Claudia', 'angkatan' => 2021, 'is_target' => true],
-                    ['username' => 'pkk_tus_02', 'nama_lengkap' => 'Daniel Wicaksono', 'angkatan' => 2020, 'is_target' => false],
+                    ['username' => 'pkk_tus_01', 'nama_lengkap' => 'Maria Claudia', 'angkatan' => 2021],
+                    ['username' => 'pkk_tus_02', 'nama_lengkap' => 'Daniel Wicaksono', 'angkatan' => 2020],
                 ],
                 'akk' => [
                     ['username' => 'akk_tus_01', 'nama_lengkap' => 'Ester Natalia', 'angkatan' => 2023],
@@ -33,8 +33,8 @@ class DummyPemuridanSeeder extends Seeder
             ],
             'UNESA' => [
                 'pkk' => [
-                    ['username' => 'pkk_unesa_01', 'nama_lengkap' => 'Ruth Maharani', 'angkatan' => 2021, 'is_target' => true],
-                    ['username' => 'pkk_unesa_02', 'nama_lengkap' => 'Andreas Putra', 'angkatan' => 2020, 'is_target' => false],
+                    ['username' => 'pkk_unesa_01', 'nama_lengkap' => 'Ruth Maharani', 'angkatan' => 2021],
+                    ['username' => 'pkk_unesa_02', 'nama_lengkap' => 'Andreas Putra', 'angkatan' => 2020],
                 ],
                 'akk' => [
                     ['username' => 'akk_unesa_01', 'nama_lengkap' => 'Debora Sihombing', 'angkatan' => 2023],
@@ -44,8 +44,8 @@ class DummyPemuridanSeeder extends Seeder
             ],
             'UBAYA' => [
                 'pkk' => [
-                    ['username' => 'pkk_ubaya_01', 'nama_lengkap' => 'Filipus Christian', 'angkatan' => 2020, 'is_target' => true],
-                    ['username' => 'pkk_ubaya_02', 'nama_lengkap' => 'Theresia Monica', 'angkatan' => 2021, 'is_target' => false],
+                    ['username' => 'pkk_ubaya_01', 'nama_lengkap' => 'Filipus Christian', 'angkatan' => 2020],
+                    ['username' => 'pkk_ubaya_02', 'nama_lengkap' => 'Theresia Monica', 'angkatan' => 2021],
                 ],
                 'akk' => [
                     ['username' => 'akk_ubaya_01', 'nama_lengkap' => 'Immanuel Ezra', 'angkatan' => 2023],
@@ -56,8 +56,8 @@ class DummyPemuridanSeeder extends Seeder
             ],
             'UNAIR' => [
                 'pkk' => [
-                    ['username' => 'pkk_unair_01', 'nama_lengkap' => 'Paulus Hartono', 'angkatan' => 2020, 'is_target' => true],
-                    ['username' => 'pkk_unair_02', 'nama_lengkap' => 'Lydia Angeline', 'angkatan' => 2021, 'is_target' => false],
+                    ['username' => 'pkk_unair_01', 'nama_lengkap' => 'Paulus Hartono', 'angkatan' => 2020],
+                    ['username' => 'pkk_unair_02', 'nama_lengkap' => 'Lydia Angeline', 'angkatan' => 2021],
                 ],
                 'akk' => [
                     ['username' => 'akk_unair_01', 'nama_lengkap' => 'Gabriel Nathan', 'angkatan' => 2023],
@@ -67,8 +67,8 @@ class DummyPemuridanSeeder extends Seeder
             ],
             'ITS' => [
                 'pkk' => [
-                    ['username' => 'pkk_its_01', 'nama_lengkap' => 'Yohanes Adrian', 'angkatan' => 2020, 'is_target' => true],
-                    ['username' => 'pkk_its_02', 'nama_lengkap' => 'Priscilla Irene', 'angkatan' => 2021, 'is_target' => false],
+                    ['username' => 'pkk_its_01', 'nama_lengkap' => 'Yohanes Adrian', 'angkatan' => 2020],
+                    ['username' => 'pkk_its_02', 'nama_lengkap' => 'Priscilla Irene', 'angkatan' => 2021],
                 ],
                 'akk' => [
                     ['username' => 'akk_its_01', 'nama_lengkap' => 'Caleb Wirawan', 'angkatan' => 2023],
@@ -108,7 +108,6 @@ class DummyPemuridanSeeder extends Seeder
                 'angkatan' => $row['angkatan'],
                 'role' => $role,
                 'foto_profil' => null,
-                'is_target' => (bool) ($row['is_target'] ?? false),
                 'admin_tipe' => null,
                 'is_active' => true,
                 'updated_at' => $now,

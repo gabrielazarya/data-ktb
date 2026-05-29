@@ -3,8 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Kampus;
-use App\Models\KategoriJurusan;
-use App\Models\Regio;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -45,11 +43,6 @@ class DashboardController extends Controller
     public function pengguna(): View
     {
         return $this->showAdminSection('pengguna');
-    }
-
-    public function pemuridan(): View
-    {
-        return $this->showAdminSection('pemuridan');
     }
 
     public function pohon(): View
@@ -97,14 +90,9 @@ class DashboardController extends Controller
             'roleCounts' => $stats['roleCounts'] ?? $this->blankRoleCounts(),
             'campusSummaries' => $canSeeAdminData ? $this->campusSummaries() : collect(),
             'userRows' => $canSeeAdminData ? $this->userRows() : collect(),
-            'pemuridanRows' => $canSeeAdminData ? $this->pemuridanRows() : collect(),
             'campusRoleGroups' => $campusRoleGroups,
             'treeGroups' => $treeGroups,
             'treeSearchNames' => $canSeeAdminData ? $this->treeSearchNames($treeGroups) : collect(),
-            'campusOptions' => $canSeeAdminData ? $this->campusOptions() : collect(),
-            'pkkOptions' => $canSeeAdminData ? $this->pkkOptions() : collect(),
-            'regioOptions' => $canSeeAdminData ? $this->regioOptions() : collect(),
-            'kategoriJurusanOptions' => $canSeeAdminData ? $this->kategoriJurusanOptions() : collect(),
         ];
     }
 
@@ -124,10 +112,6 @@ class DashboardController extends Controller
             'activeUsers' => $activeUsers,
             'inactiveUsers' => max(0, $totalUsers - $activeUsers),
             'activeCampuses' => Kampus::query()->where('is_active', true)->count(),
-            'targetPkk' => User::query()
-                ->where('role', 'pkk')
-                ->where('is_target', true)
-                ->count(),
             'roleCounts' => array_merge($this->blankRoleCounts(), $roleCounts),
         ];
     }
@@ -144,7 +128,7 @@ class DashboardController extends Controller
             [
                 'label' => 'PKK',
                 'value' => $this->formatNumber($stats['roleCounts']['pkk']),
-                'hint' => $this->formatNumber($stats['targetPkk']).' bertanda target',
+                'hint' => 'Akun pendamping KTB',
                 'tone' => 'success',
             ],
             [
@@ -186,7 +170,7 @@ class DashboardController extends Controller
             [
                 'label' => 'Angkatan',
                 'value' => $user->angkatan ? (string) $user->angkatan : '-',
-                'hint' => $user->is_target ? 'PKK target' : 'Data profil',
+                'hint' => 'Data profil',
                 'tone' => 'warning',
             ],
         ];
@@ -211,16 +195,6 @@ class DashboardController extends Controller
         return User::query()
             ->with(['kampus', 'regio', 'kategoriJurusan', 'pkkLeader.kampus'])
             ->orderByDesc('created_at')
-            ->get();
-    }
-
-    private function pemuridanRows()
-    {
-        return User::query()
-            ->with(['kampus', 'regio', 'kategoriJurusan', 'pkkLeader.kampus'])
-            ->whereIn('role', ['pkk', 'akk'])
-            ->orderBy('role', 'desc')
-            ->orderBy('nama_lengkap')
             ->get();
     }
 
@@ -288,36 +262,6 @@ class DashboardController extends Controller
         }
 
         return $campuses;
-    }
-
-    private function campusOptions()
-    {
-        return Kampus::query()
-            ->orderBy('nama_kampus')
-            ->get();
-    }
-
-    private function pkkOptions()
-    {
-        return User::query()
-            ->with('kampus')
-            ->where('role', 'pkk')
-            ->orderBy('nama_lengkap')
-            ->get();
-    }
-
-    private function regioOptions()
-    {
-        return Regio::query()
-            ->orderBy('nama_regio')
-            ->get();
-    }
-
-    private function kategoriJurusanOptions()
-    {
-        return KategoriJurusan::query()
-            ->orderBy('nama_kategori')
-            ->get();
     }
 
     private function buildPkkBranches($pkkUsers, $akkUsers)
@@ -406,11 +350,6 @@ class DashboardController extends Controller
                 'title' => 'Pengguna',
                 'eyebrow' => 'Data Pengguna',
                 'subtitle' => 'Daftar akun yang terdaftar di Sistem KTB.',
-            ]),
-            'pemuridan' => array_merge($config, [
-                'title' => 'AKK dan PKK per Kampus',
-                'eyebrow' => 'Data Pemuridan',
-                'subtitle' => 'Daftar AKK dan PKK yang dikelompokkan berdasarkan kampus.',
             ]),
             'pohon' => array_merge($config, [
                 'title' => 'Pohon Pemuridan',

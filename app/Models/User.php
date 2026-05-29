@@ -52,7 +52,6 @@ class User extends Authenticatable
         'role',
         'pkk_id',
         'foto_profil',
-        'is_target',
         'admin_tipe',
         'is_active',
     ];
@@ -77,7 +76,6 @@ class User extends Authenticatable
         return [
             'tanggal_lahir' => 'date',
             'password'      => 'hashed',
-            'is_target'     => 'boolean',
             'is_active'     => 'boolean',
         ];
     }

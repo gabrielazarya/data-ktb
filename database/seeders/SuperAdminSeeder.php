@@ -24,7 +24,6 @@ class SuperAdminSeeder extends Seeder
             'angkatan'      => null,
             'role'          => 'super_admin',
             'foto_profil'   => null,
-            'is_target'     => false,
             'admin_tipe'    => null,
             'is_active'     => true,
             'created_at'    => Carbon::now(),
