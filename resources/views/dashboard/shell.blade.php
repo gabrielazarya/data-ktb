@@ -1232,18 +1232,219 @@
         grid-template-columns: 1fr;
       }
     }
+
+    .sidebar-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .sidebar-head .brand {
+      min-width: 0;
+      margin-bottom: 0;
+    }
+
+    .sidebar-toggle,
+    .sidebar-close,
+    .sidebar-backdrop {
+      display: none;
+    }
+
+    .sidebar-toggle,
+    .sidebar-close {
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      width: 42px;
+      height: 42px;
+      border: 1px solid rgba(15, 118, 110, 0.22);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--green);
+      box-shadow: var(--shadow);
+      cursor: pointer;
+    }
+
+    .sidebar-toggle:hover,
+    .sidebar-close:hover,
+    .sidebar-toggle:focus-visible,
+    .sidebar-close:focus-visible {
+      border-color: rgba(15, 118, 110, 0.42);
+      background: var(--green-soft);
+      outline: none;
+    }
+
+    .sidebar-toggle-bars {
+      display: grid;
+      gap: 4px;
+      width: 18px;
+    }
+
+    .sidebar-toggle-bars span {
+      display: block;
+      height: 2px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    .sidebar-close {
+      font-size: 20px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    @media (max-width: 900px) {
+      .app-shell {
+        display: block;
+      }
+
+      .sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        z-index: 1200;
+        width: min(320px, calc(100vw - 44px));
+        min-height: 100dvh;
+        max-height: 100dvh;
+        overflow-y: auto;
+        transform: translateX(-105%);
+        transition: transform 0.2s ease;
+      }
+
+      body.sidebar-open .sidebar {
+        transform: translateX(0);
+      }
+
+      body.sidebar-open {
+        overflow: hidden;
+      }
+
+      .sidebar-toggle,
+      .sidebar-close {
+        display: inline-flex;
+      }
+
+      .sidebar-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 1190;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: rgba(15, 37, 68, 0.42);
+        cursor: pointer;
+      }
+
+      .sidebar-backdrop:not([hidden]) {
+        display: block;
+      }
+
+      .main {
+        width: 100%;
+      }
+
+      .topbar {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        padding-top: 10px;
+      }
+
+      .topbar-title {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        min-width: 0;
+      }
+
+      .user-menu {
+        grid-column: 3;
+        grid-row: 1;
+        justify-self: end;
+        width: auto;
+      }
+
+      .user-chip {
+        width: 46px;
+        min-height: 46px;
+        padding: 3px;
+        border-radius: 999px;
+        gap: 0;
+      }
+
+      .user-chip-avatar {
+        flex-basis: 38px;
+        width: 38px;
+        height: 38px;
+      }
+
+      .user-chip-body {
+        display: none;
+      }
+
+      .user-dropdown {
+        width: 180px;
+      }
+    }
+
+    @media (min-width: 901px) {
+      .sidebar {
+        transform: none !important;
+      }
+    }
+
+    .sidebar .nav {
+      grid-template-columns: 1fr !important;
+    }
+
+    @media (max-width: 560px) {
+      .topbar {
+        grid-template-columns: 42px minmax(0, 1fr) 46px;
+        gap: 10px;
+        margin-bottom: 18px;
+        padding: 8px 0 16px;
+      }
+
+      .sidebar-toggle {
+        width: 42px;
+        height: 42px;
+      }
+
+      .topbar h1 {
+        margin-top: 4px;
+        font-size: clamp(1.75rem, 10vw, 2.55rem);
+        line-height: 1.05;
+      }
+
+      .topbar p {
+        font-size: 15px;
+        line-height: 1.55;
+      }
+
+      .topbar .eyebrow {
+        font-size: 11px;
+      }
+
+      .nav {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="app-shell">
-    <aside class="sidebar">
-      <a class="brand" href="{{ route('dashboard') }}">
-        <img src="{{ asset('images/ktb_logo.png') }}" alt="Logo KTB">
-        <span>
-          <strong>Sistem KTB</strong>
-          <small>Perkantas Surabaya</small>
-        </span>
-      </a>
+    <aside class="sidebar" id="dashboard-sidebar" data-sidebar>
+      <div class="sidebar-head">
+        <a class="brand" href="{{ route('dashboard') }}">
+          <img src="{{ asset('images/ktb_logo.png') }}" alt="Logo KTB">
+          <span>
+            <strong>Sistem KTB</strong>
+            <small>Perkantas Surabaya</small>
+          </span>
+        </a>
+        <button class="sidebar-close" type="button" data-sidebar-close aria-label="Tutup navigasi">x</button>
+      </div>
 
       <nav class="nav" aria-label="Navigasi dashboard">
         <a class="{{ $activePage === 'dashboard' ? 'active' : '' }}" href="{{ route($dashboard['route']) }}">Dashboard</a>
@@ -1258,10 +1459,18 @@
       </nav>
 
     </aside>
+    <button class="sidebar-backdrop" type="button" data-sidebar-backdrop hidden aria-label="Tutup navigasi"></button>
 
     <main class="main">
       <header class="topbar">
-        <div>
+        <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-controls="dashboard-sidebar" aria-expanded="false" aria-label="Buka navigasi">
+          <span class="sidebar-toggle-bars" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </span>
+        </button>
+        <div class="topbar-title">
           <span class="eyebrow">{{ $dashboard['eyebrow'] }}</span>
           <h1>{{ $dashboard['title'] }}</h1>
           <p>{{ $dashboard['subtitle'] }}</p>
@@ -1805,6 +2014,56 @@
     var userMenu = document.querySelector('[data-user-menu]');
     var userMenuToggle = userMenu ? userMenu.querySelector('[data-user-menu-toggle]') : null;
     var userMenuDropdown = userMenu ? userMenu.querySelector('[data-user-menu-dropdown]') : null;
+    var sidebar = document.querySelector('[data-sidebar]');
+    var sidebarToggle = document.querySelector('[data-sidebar-toggle]');
+    var sidebarClose = document.querySelector('[data-sidebar-close]');
+    var sidebarBackdrop = document.querySelector('[data-sidebar-backdrop]');
+
+    function setSidebarOpen(isOpen) {
+      document.body.classList.toggle('sidebar-open', isOpen);
+
+      if (sidebarToggle) {
+        sidebarToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      }
+
+      if (sidebarBackdrop) {
+        sidebarBackdrop.hidden = !isOpen;
+      }
+    }
+
+    if (sidebarToggle && sidebar) {
+      sidebarToggle.addEventListener('click', function () {
+        setSidebarOpen(!document.body.classList.contains('sidebar-open'));
+      });
+    }
+
+    if (sidebarClose) {
+      sidebarClose.addEventListener('click', function () {
+        setSidebarOpen(false);
+      });
+    }
+
+    if (sidebarBackdrop) {
+      sidebarBackdrop.addEventListener('click', function () {
+        setSidebarOpen(false);
+      });
+    }
+
+    if (sidebar) {
+      sidebar.querySelectorAll('a').forEach(function (link) {
+        link.addEventListener('click', function () {
+          if (window.matchMedia('(max-width: 900px)').matches) {
+            setSidebarOpen(false);
+          }
+        });
+      });
+    }
+
+    window.addEventListener('resize', function () {
+      if (!window.matchMedia('(max-width: 900px)').matches) {
+        setSidebarOpen(false);
+      }
+    });
 
     function closeUserMenu() {
       if (!userMenuDropdown || !userMenuToggle) return;
@@ -1828,6 +2087,7 @@
       window.addEventListener('keydown', function (event) {
         if (event.key === 'Escape') {
           closeUserMenu();
+          setSidebarOpen(false);
         }
       });
     }
