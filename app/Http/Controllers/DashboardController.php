@@ -314,7 +314,7 @@ class DashboardController extends Controller
     {
         return $this->applyRegioScope(User::query(), $regioId, $isRegioScoped)
             ->with(['kampus', 'regio', 'kategoriJurusan', 'pkkLeader.kampus'])
-            ->where('role', 'admin')
+            ->whereIn('role', ['admin', 'pkk', 'akk'])
             ->orderByDesc('created_at')
             ->get();
     }
@@ -590,7 +590,7 @@ class DashboardController extends Controller
             'pengguna' => array_merge($config, [
                 'title' => 'Pengguna',
                 'eyebrow' => 'Data Pengguna',
-                'subtitle' => 'Daftar akun admin Sistem KTB.',
+                'subtitle' => 'Daftar akun admin, PKK, dan AKK Sistem KTB.',
             ]),
             'anggota-ktb' => array_merge($config, [
                 'title' => 'Anggota KTB',

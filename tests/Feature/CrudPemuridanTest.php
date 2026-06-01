@@ -78,7 +78,8 @@ class CrudPemuridanTest extends TestCase
             ->get(route('admin.dashboard'))
             ->assertOk()
             ->assertSee('Komposisi KTB')
-            ->assertSee('Kelola Data Pemuridan')
+            ->assertDontSee('Kelola Data Pemuridan')
+            ->assertDontSee('Informasi Akun')
             ->assertDontSee('Kontrol Akses Pusat')
             ->assertDontSee('>Regio</a>', false)
             ->assertDontSee('>Pengguna</a>', false);
@@ -125,7 +126,8 @@ class CrudPemuridanTest extends TestCase
             ->get(route('superadmin.dashboard'))
             ->assertOk()
             ->assertSee('Admin Regio Terbaru')
-            ->assertSee('Kontrol Akses Pusat')
+            ->assertDontSee('Kontrol Akses Pusat')
+            ->assertDontSee('Informasi Akun')
             ->assertDontSee('Kelola Data Pemuridan')
             ->assertSee('>Pengguna</a>', false)
             ->assertSee('>Regio</a>', false)
@@ -252,7 +254,8 @@ class CrudPemuridanTest extends TestCase
             ->assertOk()
             ->assertSee('Kampus Surabaya Scope')
             ->assertDontSee('Kampus Malang Scope')
-            ->assertDontSee(' - Surabaya');
+            ->assertSee('Editor - Surabaya')
+            ->assertDontSee('Malang Scope Test');
 
         $this->actingAs($admin)
             ->post(route('dashboard.kampus.store'), [
@@ -335,7 +338,6 @@ class CrudPemuridanTest extends TestCase
             ->post(route('dashboard.regio.store'), [
                 'nama_regio' => 'Regio Test',
                 'keterangan' => 'Wilayah test',
-                'is_active' => '1',
             ])
             ->assertRedirect();
 
@@ -351,7 +353,6 @@ class CrudPemuridanTest extends TestCase
             ->put(route('dashboard.regio.update', $regio), [
                 'nama_regio' => 'Regio Test Update',
                 'keterangan' => 'Wilayah update',
-                'is_active' => '0',
             ])
             ->assertRedirect();
 
@@ -359,7 +360,7 @@ class CrudPemuridanTest extends TestCase
             'regio_id' => $regio->regio_id,
             'nama_regio' => 'Regio Test Update',
             'keterangan' => 'Wilayah update',
-            'is_active' => false,
+            'is_active' => true,
         ]);
 
         $this->actingAs($admin)
@@ -414,8 +415,10 @@ class CrudPemuridanTest extends TestCase
             ->assertOk()
             ->assertSee('Operator Direktori Test')
             ->assertDontSee('superadmin_direktori_test')
-            ->assertDontSee('PKK Direktori Test')
-            ->assertDontSee('AKK Direktori Test');
+            ->assertSee('PKK Direktori Test')
+            ->assertSee('AKK Direktori Test')
+            ->assertSee('<option value="admin" selected>Admin</option>', false)
+            ->assertSee('<option value="">Semua</option>', false);
 
         $this->actingAs($superAdmin)
             ->get(route('dashboard.anggota-ktb'))

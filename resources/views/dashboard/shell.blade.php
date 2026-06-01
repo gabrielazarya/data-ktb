@@ -9,6 +9,12 @@
   $accountStatus = $user->is_active ? 'Aktif' : 'Nonaktif';
   $kampusName = $user->kampus?->nama_kampus ?: 'Belum terhubung kampus';
   $kampusShort = $user->kampus?->singkatan ?: '-';
+  $profileRoleLabel = $user->isAdmin()
+      ? ucfirst($user->admin_tipe ?: 'admin')
+      : ($roleNames[$user->role] ?? strtoupper($user->role));
+  $profileScopeLabel = $user->isAdmin()
+      ? ($user->regio?->nama_regio ?: '-')
+      : ($user->role === 'super_admin' ? 'Developer' : $kampusShort);
   $profilePhoto = $user->foto_profil
       ? (filter_var($user->foto_profil, FILTER_VALIDATE_URL) ? $user->foto_profil : asset(ltrim($user->foto_profil, '/')))
       : asset('images/default-user-profile.svg');
@@ -1741,7 +1747,7 @@
             </span>
             <span class="user-chip-body">
               <strong>{{ $user->nama_lengkap }}</strong>
-              <span>{{ $roleNames[$user->role] ?? strtoupper($user->role) }} - {{ $kampusShort }}</span>
+              <span>{{ $profileRoleLabel }} - {{ $profileScopeLabel }}</span>
             </span>
           </button>
           <div class="user-dropdown" data-user-menu-dropdown hidden>
@@ -1915,43 +1921,25 @@
           @endif
         </section>
 
-        <section class="content-grid">
-          <article class="panel" id="profil-akun">
-            <div class="panel-head">
-              <div>
-                <span class="eyebrow">Profil</span>
-                <h2>Informasi Akun</h2>
+        @unless ($user->isSuperAdmin() || $user->isAdmin())
+          <section class="content-grid">
+            <article class="panel" id="profil-akun">
+              <div class="panel-head">
+                <div>
+                  <span class="eyebrow">Profil</span>
+                  <h2>Informasi Akun</h2>
+                </div>
+                <span class="badge {{ $user->is_active ? '' : 'warning' }}">{{ $accountStatus }}</span>
               </div>
-              <span class="badge {{ $user->is_active ? '' : 'warning' }}">{{ $accountStatus }}</span>
-            </div>
-            <div class="detail-list">
-              <div class="detail-row">
-                <span class="detail-label">Nama</span>
-                <span class="detail-value">{{ $user->nama_lengkap }}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Username</span>
-                <span class="detail-value">{{ $user->username }}</span>
-              </div>
-              @if ($user->isSuperAdmin())
+              <div class="detail-list">
                 <div class="detail-row">
-                  <span class="detail-label">Cakupan</span>
-                  <span class="detail-value">Seluruh regio</span>
+                  <span class="detail-label">Nama</span>
+                  <span class="detail-value">{{ $user->nama_lengkap }}</span>
                 </div>
                 <div class="detail-row">
-                  <span class="detail-label">Role</span>
-                  <span class="detail-value">{{ $roleNames[$user->role] ?? strtoupper($user->role) }}</span>
+                  <span class="detail-label">Username</span>
+                  <span class="detail-value">{{ $user->username }}</span>
                 </div>
-              @elseif ($user->isAdmin())
-                <div class="detail-row">
-                  <span class="detail-label">Regio</span>
-                  <span class="detail-value">{{ $user->regio?->nama_regio ?: 'Belum ada regio' }}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="detail-label">Tipe Admin</span>
-                  <span class="detail-value">{{ ucfirst($user->admin_tipe ?: '-') }}</span>
-                </div>
-              @else
                 <div class="detail-row">
                   <span class="detail-label">Kampus</span>
                   <span class="detail-value">{{ $kampusName }}</span>
@@ -1960,58 +1948,10 @@
                   <span class="detail-label">Angkatan</span>
                   <span class="detail-value">{{ $user->angkatan ?: '-' }}</span>
                 </div>
-              @endif
-            </div>
-          </article>
-
-          @if ($user->isSuperAdmin())
-            <article class="panel">
-              <div class="panel-head">
-                <div>
-                  <span class="eyebrow">Ruang Kerja</span>
-                  <h2>Kontrol Akses Pusat</h2>
-                </div>
-              </div>
-              <div class="detail-list">
-                <div class="detail-row">
-                  <span class="detail-label">Fokus</span>
-                  <span class="detail-value">Admin dan regio</span>
-                </div>
-                <div class="detail-row">
-                  <span class="detail-label">Akses Operasional</span>
-                  <span class="detail-value">Melalui pindah akses admin</span>
-                </div>
-              </div>
-              <div class="row-actions panel-actions">
-                <a class="btn is-compact" href="{{ route('dashboard.pengguna') }}">Pengguna</a>
-                <a class="btn is-compact" href="{{ route('dashboard.regio') }}">Regio</a>
               </div>
             </article>
-          @elseif ($user->isAdmin())
-            <article class="panel">
-              <div class="panel-head">
-                <div>
-                  <span class="eyebrow">Ruang Kerja</span>
-                  <h2>Kelola Data Pemuridan</h2>
-                </div>
-              </div>
-              <div class="detail-list">
-                <div class="detail-row">
-                  <span class="detail-label">Mode</span>
-                  <span class="detail-value">{{ $user->isAdminEditor() ? 'Editor' : 'Pelihat' }}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="detail-label">Batas Data</span>
-                  <span class="detail-value">{{ $user->regio?->nama_regio ?: 'Regio sendiri' }}</span>
-                </div>
-              </div>
-              <div class="row-actions panel-actions">
-                <a class="btn is-compact" href="{{ route('dashboard.anggota-ktb') }}">Lihat Anggota</a>
-                <a class="btn is-compact" href="{{ route('dashboard.pohon') }}">Lihat Pohon</a>
-              </div>
-            </article>
-          @endif
-        </section>
+          </section>
+        @endunless
 
         @if ($user->isAdmin())
           @include('dashboard.partials.campus-summary-table')
@@ -2318,7 +2258,6 @@
                   <tr>
                     <th>Regio</th>
                     <th>Keterangan</th>
-                    <th>Status</th>
                     <th>Total User</th>
                     <th>Aktif</th>
                     <th>PKK</th>
@@ -2333,11 +2272,6 @@
                     <tr>
                       <td><strong>{{ $regio->nama_regio }}</strong></td>
                       <td>{{ $regio->keterangan ?: '-' }}</td>
-                      <td>
-                        <span class="badge {{ $regio->is_active ? '' : 'warning' }}">
-                          {{ $regio->is_active ? 'Aktif' : 'Nonaktif' }}
-                        </span>
-                      </td>
                       <td>{{ number_format($regio->total_users, 0, ',', '.') }}</td>
                       <td>{{ number_format($regio->active_users, 0, ',', '.') }}</td>
                       <td>{{ number_format($regio->pkk_users, 0, ',', '.') }}</td>
@@ -2378,11 +2312,13 @@
         @php
           $directoryRows = $activePage === 'anggota-ktb' ? $memberRows : $userRows;
           $directoryTitle = $activePage === 'anggota-ktb' ? 'Anggota KTB' : 'Daftar Pengguna';
-          $directoryEyebrow = $activePage === 'anggota-ktb' ? 'Direktori KTB' : 'Direktori Admin';
-          $directoryEmpty = $activePage === 'anggota-ktb' ? 'Belum ada data anggota KTB.' : 'Belum ada data pengguna admin.';
-          $directorySearch = $activePage === 'anggota-ktb' ? 'Cari anggota KTB...' : 'Cari pengguna admin...';
+          $directoryEyebrow = $activePage === 'anggota-ktb' ? 'Direktori KTB' : 'Direktori Pengguna';
+          $directoryEmpty = $activePage === 'anggota-ktb' ? 'Belum ada data anggota KTB.' : 'Belum ada data pengguna.';
+          $directorySearch = $activePage === 'anggota-ktb' ? 'Cari anggota KTB...' : 'Cari pengguna...';
           $directoryTableId = $activePage === 'anggota-ktb' ? 'member-table' : 'user-table';
           $directoryCanManageAdmins = $activePage === 'pengguna' && $canManageData;
+          $useDirectoryRoleFilter = $activePage === 'pengguna';
+          $directoryColspan = $directoryCanManageAdmins ? 8 : 7;
         @endphp
 
         <section class="panel" id="{{ $activePage === 'anggota-ktb' ? 'daftar-anggota-ktb' : 'daftar-pengguna' }}">
@@ -2391,8 +2327,26 @@
               <span class="eyebrow">{{ $directoryEyebrow }}</span>
               <h2>{{ $directoryTitle }}</h2>
             </div>
-            <div class="row-actions table-panel-actions">
-              <input class="search" type="search" placeholder="{{ $directorySearch }}" data-filter-table="{{ $directoryTableId }}" aria-label="{{ $directorySearch }}">
+            <div class="row-actions table-panel-actions" @if ($useDirectoryRoleFilter) data-filter-panel="{{ $directoryTableId }}" @endif>
+              <input
+                class="search"
+                type="search"
+                placeholder="{{ $directorySearch }}"
+                @if ($useDirectoryRoleFilter)
+                  data-column-filter="search"
+                @else
+                  data-filter-table="{{ $directoryTableId }}"
+                @endif
+                aria-label="{{ $directorySearch }}"
+              >
+              @if ($useDirectoryRoleFilter)
+                <select class="search" data-column-filter="role" aria-label="Filter role pengguna">
+                  <option value="admin" selected>Admin</option>
+                  <option value="pkk">PKK</option>
+                  <option value="akk">AKK</option>
+                  <option value="">Semua</option>
+                </select>
+              @endif
               @if ($directoryCanManageAdmins)
                 <button class="btn is-compact" type="button" data-modal-open="modal-admin-user-create">Tambah Admin</button>
               @endif
@@ -2419,6 +2373,9 @@
           @if ($directoryRows->isEmpty())
             <div class="empty-state">{{ $directoryEmpty }}</div>
           @else
+            @if ($useDirectoryRoleFilter)
+              <p class="table-counter" data-filter-counter="{{ $directoryTableId }}"></p>
+            @endif
             <div class="table-wrap">
               <table class="table" id="{{ $directoryTableId }}">
                 <thead>
@@ -2437,7 +2394,13 @@
                 </thead>
                 <tbody>
                   @foreach ($directoryRows as $row)
-                    <tr>
+                    <tr
+                      @if ($useDirectoryRoleFilter)
+                        data-filter-row
+                        data-role="{{ $row->role }}"
+                        data-search-text="{{ trim($row->nama_lengkap.' '.$row->username.' '.($roleNames[$row->role] ?? strtoupper($row->role)).' '.($row->regio?->nama_regio ?: '').' '.($row->kampus?->singkatan ?: '').' '.($row->kampus?->nama_kampus ?: '').' '.($row->angkatan ?: '')) }}"
+                      @endif
+                    >
                       <td>
                         <strong>{{ $row->nama_lengkap }}</strong>
                         <div class="muted">Dibuat {{ $row->created_at?->format('d M Y') ?: '-' }}</div>
@@ -2534,6 +2497,13 @@
                       @endif
                     </tr>
                   @endforeach
+                  @if ($useDirectoryRoleFilter)
+                    <tr data-filter-empty-row hidden>
+                      <td colspan="{{ $directoryColspan }}">
+                        <div class="empty-state">Tidak ada pengguna yang cocok dengan filter.</div>
+                      </td>
+                    </tr>
+                  @endif
                 </tbody>
               </table>
             </div>

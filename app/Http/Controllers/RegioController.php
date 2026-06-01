@@ -17,7 +17,10 @@ class RegioController extends Controller
 
         $validated = $this->validateRegio($request);
 
-        Regio::query()->create($this->payload($request, $validated));
+        Regio::query()->create([
+            ...$this->payload($validated),
+            'is_active' => true,
+        ]);
 
         return back()->with('success', 'Data regio berhasil ditambahkan.');
     }
@@ -28,7 +31,7 @@ class RegioController extends Controller
 
         $validated = $this->validateRegio($request, $regio);
 
-        $regio->update($this->payload($request, $validated));
+        $regio->update($this->payload($validated));
 
         return back()->with('success', 'Data regio berhasil diperbarui.');
     }
@@ -43,20 +46,17 @@ class RegioController extends Controller
                 Rule::unique('regios', 'nama_regio')->ignore($regio?->regio_id, 'regio_id'),
             ],
             'keterangan' => ['nullable', 'string', 'max:255'],
-            'is_active' => ['nullable', 'boolean'],
         ], [], [
             'nama_regio' => 'nama regio',
             'keterangan' => 'keterangan',
-            'is_active' => 'status aktif',
         ]);
     }
 
-    private function payload(Request $request, array $validated): array
+    private function payload(array $validated): array
     {
         return [
             'nama_regio' => $validated['nama_regio'],
             'keterangan' => blank($validated['keterangan'] ?? null) ? null : $validated['keterangan'],
-            'is_active' => $request->boolean('is_active'),
         ];
     }
 
