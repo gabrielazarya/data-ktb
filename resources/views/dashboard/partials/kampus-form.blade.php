@@ -1,6 +1,7 @@
 @php
   $kampus ??= null;
   $regioOptions ??= collect();
+  $currentUser = auth()->user();
   $isEdit = filled($kampus);
   $formId = $isEdit ? 'kampus-edit-'.$kampus->kampus_id : 'kampus-create';
   $surabayaRegio = $regioOptions->firstWhere('nama_regio', 'Surabaya');
@@ -22,17 +23,19 @@
       <label for="{{ $formId }}-singkatan">Singkatan</label>
       <input id="{{ $formId }}-singkatan" type="text" name="singkatan" value="{{ $isEdit ? $kampus->singkatan : old('singkatan') }}" maxlength="50">
     </div>
-    <div class="field">
-      <label for="{{ $formId }}-regio">Regio</label>
-      <select id="{{ $formId }}-regio" name="regio_id" required>
-        <option value="">Pilih regio</option>
-        @foreach ($regioOptions as $regio)
-          <option value="{{ $regio->regio_id }}" {{ (string) $selectedRegioId === (string) $regio->regio_id ? 'selected' : '' }}>
-            {{ $regio->nama_regio }}{{ $regio->is_active ? '' : ' (Nonaktif)' }}
-          </option>
-        @endforeach
-      </select>
-    </div>
+    @if ($currentUser?->isSuperAdmin())
+      <div class="field">
+        <label for="{{ $formId }}-regio">Regio</label>
+        <select id="{{ $formId }}-regio" name="regio_id" required>
+          <option value="">Pilih regio</option>
+          @foreach ($regioOptions as $regio)
+            <option value="{{ $regio->regio_id }}" {{ (string) $selectedRegioId === (string) $regio->regio_id ? 'selected' : '' }}>
+              {{ $regio->nama_regio }}{{ $regio->is_active ? '' : ' (Nonaktif)' }}
+            </option>
+          @endforeach
+        </select>
+      </div>
+    @endif
     <label class="checkbox-field">
       <input type="hidden" name="is_active" value="0">
       <input type="checkbox" name="is_active" value="1" {{ $isEdit ? ($kampus->is_active ? 'checked' : '') : (old('is_active', '1') ? 'checked' : '') }}>

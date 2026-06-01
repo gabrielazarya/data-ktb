@@ -37,9 +37,19 @@ class DashboardController extends Controller
         return $this->show('akk');
     }
 
-    public function kampus(): View
+    public function kampus(): RedirectResponse
     {
-        return $this->showAdminSection('kampus');
+        /** @var User|null $user */
+        $user = Auth::user();
+
+        abort_unless($user && $user->isAdmin(), 403);
+
+        return redirect()->route('admin.dashboard');
+    }
+
+    public function kampusDetail(Kampus $kampus): View
+    {
+        return $this->showKampusDetail($kampus);
     }
 
     public function regio(): View
@@ -78,65 +88,146 @@ class DashboardController extends Controller
         $user = Auth::user();
 
         abort_unless(in_array($user->role, ['super_admin', 'admin'], true), 403);
+        abort_if(in_array($activePage, ['regio', 'pengguna'], true) && ! $user->isSuperAdmin(), 403);
+        abort_if(in_array($activePage, ['kampus', 'anggota-ktb', 'pohon'], true) && $user->isSuperAdmin(), 403);
 
         return view('dashboard.shell', $this->buildDashboardData((string) $user->role, $user, $activePage));
+    }
+
+    private function showKampusDetail(Kampus $kampus): View
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        abort_unless($user && $user->isAdmin(), 403);
+        $this->authorizeKampusDetailAccess($kampus, $user);
+
+        $kampusDetail = $this->campusDetailRow($kampus);
+        $data = $this->buildDashboardData((string) $user->role, $user, 'kampus-detail');
+        $campusLabel = $kampusDetail->singkatan ?: $kampusDetail->nama_kampus;
+
+        $data['selectedKampus'] = $kampusDetail;
+        $data['selectedCampusMembers'] = $this->selectedCampusMembers($kampusDetail);
+        $data['selectedCampusGroups'] = $this->selectedCampusGroups($kampusDetail);
+        $data['dashboard'] = array_merge($data['dashboard'], [
+            'title' => $campusLabel,
+            'eyebrow' => 'Detail Kampus',
+            'subtitle' => 'Ringkasan anggota dan kelompok di '.$kampusDetail->nama_kampus.'.',
+        ]);
+
+        return view('dashboard.shell', $data);
     }
 
     private function buildDashboardData(string $role, User $user, string $activePage): array
     {
         $canSeeAdminData = in_array($role, ['super_admin', 'admin'], true);
-        $stats = $canSeeAdminData ? $this->adminStats() : [];
-        $campusRoleGroups = $canSeeAdminData ? $this->campusRoleGroups() : collect();
+        $isRegioScoped = $canSeeAdminData && ! $user->isSuperAdmin();
+        $regioScopeId = $isRegioScoped ? $user->regio_id : null;
+        $stats = $canSeeAdminData ? $this->adminStats($regioScopeId, $isRegioScoped) : [];
+        $campusRoleGroups = $canSeeAdminData ? $this->campusRoleGroups($regioScopeId, $isRegioScoped) : collect();
         $treeGroups = $canSeeAdminData ? $campusRoleGroups : collect();
 
         return [
             'activePage' => $activePage,
             'dashboard' => $this->dashboardConfig($role, $user, $activePage),
             'metrics' => $canSeeAdminData
-                ? $this->adminMetrics($stats)
+                ? ($user->isSuperAdmin() ? $this->superAdminMetrics($stats) : $this->adminMetrics($stats))
                 : $this->personalMetrics($user),
             'canSeeAdminData' => $canSeeAdminData,
             'canManageData' => $this->canManageData($user),
             'roleCounts' => $stats['roleCounts'] ?? $this->blankRoleCounts(),
-            'campusSummaries' => $canSeeAdminData ? $this->campusSummaries() : collect(),
-            'regioRows' => $canSeeAdminData ? $this->regioRows() : collect(),
-            'userRows' => $canSeeAdminData ? $this->userRows() : collect(),
-            'memberRows' => $canSeeAdminData ? $this->memberRows() : collect(),
+            'campusSummaries' => $canSeeAdminData ? $this->campusSummaries($regioScopeId, $isRegioScoped) : collect(),
+            'regioRows' => $canSeeAdminData ? $this->regioRows($regioScopeId, $isRegioScoped) : collect(),
+            'userRows' => $canSeeAdminData ? $this->userRows($regioScopeId, $isRegioScoped) : collect(),
+            'memberRows' => $canSeeAdminData ? $this->memberRows($regioScopeId, $isRegioScoped) : collect(),
             'campusRoleGroups' => $campusRoleGroups,
             'treeGroups' => $treeGroups,
             'treeSearchNames' => $canSeeAdminData ? $this->treeSearchNames($treeGroups) : collect(),
-            'campusOptions' => $canSeeAdminData ? $this->campusOptions() : collect(),
-            'regioOptions' => $canSeeAdminData ? $this->regioOptions() : collect(),
+            'campusOptions' => $canSeeAdminData ? $this->campusOptions($regioScopeId, $isRegioScoped) : collect(),
+            'regioOptions' => $canSeeAdminData ? $this->regioOptions($regioScopeId, $isRegioScoped) : collect(),
+            'selectedKampus' => null,
+            'selectedCampusMembers' => collect(),
+            'selectedCampusGroups' => collect(),
         ];
     }
 
-    private function adminStats(): array
+    private function adminStats(?int $regioId, bool $isRegioScoped): array
     {
-        $totalUsers = User::query()->count();
-        $activeUsers = User::query()->where('is_active', true)->count();
-        $roleCounts = User::query()
+        $userQuery = $this->applyRegioScope(User::query(), $regioId, $isRegioScoped);
+        $totalUsers = (clone $userQuery)->count();
+        $activeUsers = (clone $userQuery)->where('is_active', true)->count();
+        $roleCounts = (clone $userQuery)
             ->selectRaw('role, COUNT(*) as total')
             ->groupBy('role')
             ->pluck('total', 'role')
             ->map(fn ($total) => (int) $total)
             ->all();
+        $activeRoleCounts = (clone $userQuery)
+            ->where('is_active', true)
+            ->selectRaw('role, COUNT(*) as total')
+            ->groupBy('role')
+            ->pluck('total', 'role')
+            ->map(fn ($total) => (int) $total)
+            ->all();
+        $campusQuery = $this->applyRegioScope(Kampus::query(), $regioId, $isRegioScoped);
+        $groupQuery = $this->applyRegioScope(KelompokPemuridan::query(), $regioId, $isRegioScoped);
+        $regioQuery = $this->applyRegioScope(Regio::query(), $regioId, $isRegioScoped);
 
         return [
             'totalUsers' => $totalUsers,
             'activeUsers' => $activeUsers,
             'inactiveUsers' => max(0, $totalUsers - $activeUsers),
-            'activeCampuses' => Kampus::query()->where('is_active', true)->count(),
+            'totalCampuses' => (clone $campusQuery)->count(),
+            'activeCampuses' => (clone $campusQuery)->where('is_active', true)->count(),
+            'totalGroups' => (clone $groupQuery)->count(),
+            'activeGroups' => (clone $groupQuery)->where('is_active', true)->count(),
+            'totalRegios' => (clone $regioQuery)->count(),
+            'activeRegios' => (clone $regioQuery)->where('is_active', true)->count(),
             'roleCounts' => array_merge($this->blankRoleCounts(), $roleCounts),
+            'activeRoleCounts' => array_merge($this->blankRoleCounts(), $activeRoleCounts),
+        ];
+    }
+
+    private function superAdminMetrics(array $stats): array
+    {
+        return [
+            [
+                'label' => 'Admin',
+                'value' => $this->formatNumber($stats['roleCounts']['admin']),
+                'hint' => $this->formatNumber($stats['activeRoleCounts']['admin']).' akun admin aktif',
+                'tone' => 'primary',
+            ],
+            [
+                'label' => 'Regio Aktif',
+                'value' => $this->formatNumber($stats['activeRegios']),
+                'hint' => $this->formatNumber($stats['totalRegios']).' total regio pelayanan',
+                'tone' => 'success',
+            ],
+            [
+                'label' => 'Super Admin',
+                'value' => $this->formatNumber($stats['roleCounts']['super_admin']),
+                'hint' => 'Akses pusat sistem',
+                'tone' => 'info',
+            ],
+            [
+                'label' => 'Akun Aktif',
+                'value' => $this->formatNumber($stats['activeUsers']),
+                'hint' => $this->formatNumber($stats['totalUsers']).' total akun sistem',
+                'tone' => 'warning',
+            ],
         ];
     }
 
     private function adminMetrics(array $stats): array
     {
+        $memberUsers = $stats['roleCounts']['pkk'] + $stats['roleCounts']['akk'];
+        $activeMemberUsers = $stats['activeRoleCounts']['pkk'] + $stats['activeRoleCounts']['akk'];
+
         return [
             [
-                'label' => 'Pengguna Aktif',
-                'value' => $this->formatNumber($stats['activeUsers']),
-                'hint' => $this->formatNumber($stats['totalUsers']).' total akun',
+                'label' => 'Anggota KTB',
+                'value' => $this->formatNumber($memberUsers),
+                'hint' => $this->formatNumber($activeMemberUsers).' anggota aktif',
                 'tone' => 'primary',
             ],
             [
@@ -152,9 +243,9 @@ class DashboardController extends Controller
                 'tone' => 'info',
             ],
             [
-                'label' => 'Kampus Aktif',
-                'value' => $this->formatNumber($stats['activeCampuses']),
-                'hint' => $this->formatNumber($stats['inactiveUsers']).' akun nonaktif',
+                'label' => 'Kelompok',
+                'value' => $this->formatNumber($stats['totalGroups']),
+                'hint' => $this->formatNumber($stats['activeGroups']).' kelompok aktif',
                 'tone' => 'warning',
             ],
         ];
@@ -190,9 +281,9 @@ class DashboardController extends Controller
         ];
     }
 
-    private function campusSummaries()
+    private function campusSummaries(?int $regioId, bool $isRegioScoped)
     {
-        return Kampus::query()
+        return $this->applyRegioScope(Kampus::query(), $regioId, $isRegioScoped)
             ->with('regio')
             ->withCount([
                 'users as total_users',
@@ -205,9 +296,9 @@ class DashboardController extends Controller
             ->get();
     }
 
-    private function regioRows()
+    private function regioRows(?int $regioId, bool $isRegioScoped)
     {
-        return Regio::query()
+        return $this->applyRegioScope(Regio::query(), $regioId, $isRegioScoped)
             ->withCount([
                 'users as total_users',
                 'users as active_users' => fn ($query) => $query->where('is_active', true),
@@ -219,38 +310,38 @@ class DashboardController extends Controller
             ->get();
     }
 
-    private function userRows()
+    private function userRows(?int $regioId, bool $isRegioScoped)
     {
-        return User::query()
+        return $this->applyRegioScope(User::query(), $regioId, $isRegioScoped)
             ->with(['kampus', 'regio', 'kategoriJurusan', 'pkkLeader.kampus'])
-            ->whereIn('role', ['admin', 'super_admin'])
+            ->where('role', 'admin')
             ->orderByDesc('created_at')
             ->get();
     }
 
-    private function memberRows()
+    private function memberRows(?int $regioId, bool $isRegioScoped)
     {
-        return User::query()
+        return $this->applyRegioScope(User::query(), $regioId, $isRegioScoped)
             ->with(['kampus', 'regio', 'kategoriJurusan', 'pkkLeader.kampus', 'kelompokPemuridan'])
             ->whereIn('role', ['akk', 'pkk'])
             ->orderByDesc('created_at')
             ->get();
     }
 
-    private function campusRoleGroups()
+    private function campusRoleGroups(?int $regioId, bool $isRegioScoped)
     {
-        $allPeople = User::query()
+        $allPeople = $this->applyRegioScope(User::query(), $regioId, $isRegioScoped)
             ->with(['kampus', 'regio', 'kategoriJurusan', 'pkkLeader.kampus', 'kelompokPemuridan'])
             ->whereIn('role', ['akk', 'pkk'])
             ->orderBy('nama_lengkap')
             ->get();
 
-        $allGroups = KelompokPemuridan::query()
+        $allGroups = $this->applyRegioScope(KelompokPemuridan::query(), $regioId, $isRegioScoped)
             ->with(['kampus.regio', 'regio', 'pemimpin.kampus'])
             ->orderBy('nama_kelompok')
             ->get();
 
-        $campuses = Kampus::query()
+        $campuses = $this->applyRegioScope(Kampus::query(), $regioId, $isRegioScoped)
             ->with('regio')
             ->orderBy('nama_kampus')
             ->get()
@@ -308,17 +399,52 @@ class DashboardController extends Controller
         return $campuses;
     }
 
-    private function campusOptions()
+    private function campusOptions(?int $regioId, bool $isRegioScoped)
     {
-        return Kampus::query()
+        return $this->applyRegioScope(Kampus::query(), $regioId, $isRegioScoped)
             ->with('regio')
             ->orderBy('nama_kampus')
             ->get();
     }
 
-    private function regioOptions()
+    private function campusDetailRow(Kampus $kampus): Kampus
     {
-        return Regio::query()
+        return Kampus::query()
+            ->with('regio')
+            ->withCount([
+                'users as total_users',
+                'users as active_users' => fn ($query) => $query->where('is_active', true),
+                'users as pkk_users' => fn ($query) => $query->where('role', 'pkk'),
+                'users as akk_users' => fn ($query) => $query->where('role', 'akk'),
+                'kelompokPemuridan as groups_count',
+                'kelompokPemuridan as active_groups_count' => fn ($query) => $query->where('is_active', true),
+            ])
+            ->findOrFail($kampus->getKey());
+    }
+
+    private function selectedCampusMembers(Kampus $kampus)
+    {
+        return User::query()
+            ->with(['pkkLeader', 'kelompokPemuridan'])
+            ->where('kampus_id', $kampus->kampus_id)
+            ->whereIn('role', ['akk', 'pkk'])
+            ->orderBy('nama_lengkap')
+            ->get();
+    }
+
+    private function selectedCampusGroups(Kampus $kampus)
+    {
+        return KelompokPemuridan::query()
+            ->with('pemimpin')
+            ->withCount('anggota')
+            ->where('kampus_id', $kampus->kampus_id)
+            ->orderBy('nama_kelompok')
+            ->get();
+    }
+
+    private function regioOptions(?int $regioId, bool $isRegioScoped)
+    {
+        return $this->applyRegioScope(Regio::query(), $regioId, $isRegioScoped)
             ->orderByDesc('is_active')
             ->orderBy('nama_regio')
             ->get();
@@ -416,14 +542,14 @@ class DashboardController extends Controller
             'super_admin' => [
                 'title' => 'Dashboard Super Admin',
                 'eyebrow' => 'Kontrol sistem',
-                'subtitle' => 'Ringkasan akun, kampus, dan akses Sistem KTB.',
+                'subtitle' => 'Kelola akses admin dan struktur regio Sistem KTB.',
                 'roleLabel' => 'Super Admin',
                 'route' => 'superadmin.dashboard',
             ],
             'admin' => [
                 'title' => 'Dashboard Admin',
                 'eyebrow' => $user->admin_tipe ? 'Admin '.ucfirst($user->admin_tipe) : 'Admin',
-                'subtitle' => 'Ringkasan data pengguna dan kampus untuk pengelolaan KTB.',
+                'subtitle' => 'Pantau anggota, kampus, dan kelompok KTB di '.($user->regio?->nama_regio ?: 'regio Anda').'.',
                 'roleLabel' => 'Admin',
                 'route' => 'admin.dashboard',
             ],
@@ -464,7 +590,7 @@ class DashboardController extends Controller
             'pengguna' => array_merge($config, [
                 'title' => 'Pengguna',
                 'eyebrow' => 'Data Pengguna',
-                'subtitle' => 'Daftar akun admin dan super admin Sistem KTB.',
+                'subtitle' => 'Daftar akun admin Sistem KTB.',
             ]),
             'anggota-ktb' => array_merge($config, [
                 'title' => 'Anggota KTB',
@@ -493,6 +619,25 @@ class DashboardController extends Controller
     private function canManageData(User $user): bool
     {
         return $user->isSuperAdmin() || $user->isAdminEditor();
+    }
+
+    private function authorizeKampusDetailAccess(Kampus $kampus, User $user): void
+    {
+        abort_unless(
+            filled($user->regio_id) && (int) $kampus->regio_id === (int) $user->regio_id,
+            403
+        );
+    }
+
+    private function applyRegioScope($query, ?int $regioId, bool $isRegioScoped)
+    {
+        if (! $isRegioScoped) {
+            return $query;
+        }
+
+        return filled($regioId)
+            ? $query->where('regio_id', $regioId)
+            : $query->whereRaw('1 = 0');
     }
 
     private function routeForRole(string $role): string

@@ -16,7 +16,7 @@ class TreeGroupController extends Controller
 {
     public function storeGroup(Request $request): RedirectResponse
     {
-        $this->authorizeManageData();
+        $actor = $this->authorizeManageData();
 
         $validated = $request->validate([
             'pemimpin_id' => [
@@ -31,9 +31,12 @@ class TreeGroupController extends Controller
             'is_active' => 'status aktif',
         ]);
 
-        $leader = User::query()->findOrFail($validated['pemimpin_id']);
+        $leader = User::query()
+            ->with('kampus')
+            ->findOrFail($validated['pemimpin_id']);
+        $this->authorizePersonAccess($leader, $actor);
         $leader->loadMissing('kampus');
-        $regioId = $this->resolveRegioId($leader->regio_id ?: $leader->kampus?->regio_id);
+        $regioId = $this->resolveRegioId($actor, $leader->regio_id ?: $leader->kampus?->regio_id);
         $groupName = trim((string) ($validated['nama_kelompok'] ?? ''));
 
         $leader->forceFill([
@@ -55,7 +58,7 @@ class TreeGroupController extends Controller
 
     public function storeMember(Request $request): RedirectResponse
     {
-        $this->authorizeManageData();
+        $actor = $this->authorizeManageData();
 
         $context = $request->validate([
             'kelompok_id' => ['nullable', Rule::exists('kelompok_pemuridan', 'kelompok_id')],
@@ -70,16 +73,19 @@ class TreeGroupController extends Controller
                 ->with(['kampus', 'pemimpin'])
                 ->findOrFail($context['kelompok_id'])
             : null;
+        $this->authorizeGroupAccess($group, $actor);
 
         $payload = $this->validateUserPayload($request, 'nama anggota', validateCampus: $group === null);
         $campus = $group === null && filled($payload['kampus_id'] ?? null)
             ? Kampus::query()->find($payload['kampus_id'])
             : null;
+        $this->authorizeKampusAccess($campus, $actor);
         $payload['role'] = 'akk';
         $payload['pkk_id'] = $group?->pemimpin_id;
         $payload['kelompok_id'] = $group?->kelompok_id;
         $payload['kampus_id'] = $group ? $group->kampus_id : ($campus?->kampus_id ?? null);
         $payload['regio_id'] = $this->resolveRegioId(
+            $actor,
             $group?->regio_id
             ?: $group?->kampus?->regio_id
             ?: $group?->pemimpin?->regio_id
@@ -161,8 +167,14 @@ class TreeGroupController extends Controller
         return $username;
     }
 
-    private function resolveRegioId(mixed $regioId = null): int
+    private function resolveRegioId(User $actor, mixed $regioId = null): int
     {
+        if (! $actor->isSuperAdmin()) {
+            abort_unless(filled($actor->regio_id), 403);
+
+            return (int) $actor->regio_id;
+        }
+
         if (filled($regioId)) {
             return (int) $regioId;
         }
@@ -176,14 +188,47 @@ class TreeGroupController extends Controller
         )->regio_id;
     }
 
-    private function authorizeManageData(): void
+    private function authorizePersonAccess(?User $person, User $actor): void
+    {
+        if ($person === null || $actor->isSuperAdmin()) {
+            return;
+        }
+
+        $personRegioId = $person->regio_id ?: $person->kampus?->regio_id;
+
+        abort_unless(filled($actor->regio_id) && (int) $personRegioId === (int) $actor->regio_id, 403);
+    }
+
+    private function authorizeGroupAccess(?KelompokPemuridan $group, User $actor): void
+    {
+        if ($group === null || $actor->isSuperAdmin()) {
+            return;
+        }
+
+        $groupRegioId = $group->regio_id ?: $group->kampus?->regio_id ?: $group->pemimpin?->regio_id;
+
+        abort_unless(filled($actor->regio_id) && (int) $groupRegioId === (int) $actor->regio_id, 403);
+    }
+
+    private function authorizeKampusAccess(?Kampus $kampus, User $actor): void
+    {
+        if ($kampus === null || $actor->isSuperAdmin()) {
+            return;
+        }
+
+        abort_unless(filled($actor->regio_id) && (int) $kampus->regio_id === (int) $actor->regio_id, 403);
+    }
+
+    private function authorizeManageData(): User
     {
         /** @var User|null $user */
         $user = Auth::user();
 
         abort_unless(
-            $user && ($user->isSuperAdmin() || $user->isAdminEditor()),
+            $user && $user->isAdminEditor(),
             403
         );
+
+        return $user;
     }
 }

@@ -13,7 +13,9 @@
       ? (filter_var($user->foto_profil, FILTER_VALIDATE_URL) ? $user->foto_profil : asset(ltrim($user->foto_profil, '/')))
       : asset('images/default-user-profile.svg');
   $activePage = $activePage ?? 'dashboard';
+  $selectedKampus = $selectedKampus ?? null;
   $maxRoleCount = max(array_values($roleCounts));
+  $isSwitchingAccess = session()->has('impersonator_super_admin_id');
 @endphp
 <!doctype html>
 <html lang="id">
@@ -137,6 +139,91 @@
       color: var(--green);
     }
 
+    .nav-group {
+      display: grid;
+      gap: 6px;
+    }
+
+    .nav-group summary {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 8px;
+      color: #33413d;
+      font-weight: 800;
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .nav-group summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .nav-group summary:hover,
+    .nav-group summary.active {
+      background: var(--green-soft);
+      color: var(--green);
+    }
+
+    .nav-chevron {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: rgba(15, 118, 110, 0.1);
+      transition: background 0.16s ease;
+    }
+
+    .nav-chevron::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      margin-top: -3px;
+      border-right: 2px solid currentColor;
+      border-bottom: 2px solid currentColor;
+      transform: rotate(45deg);
+      transition: transform 0.16s ease, margin 0.16s ease;
+    }
+
+    .nav-group[open] .nav-chevron {
+      background: rgba(15, 118, 110, 0.16);
+    }
+
+    .nav-group[open] .nav-chevron::before {
+      margin-top: 3px;
+      transform: rotate(225deg);
+    }
+
+    .nav-submenu {
+      display: grid;
+      gap: 4px;
+      margin: 2px 0 4px 10px;
+      padding: 4px 0 4px 12px;
+      border-left: 1px solid var(--line);
+    }
+
+    .nav-submenu a {
+      min-width: 0;
+      padding: 8px 10px;
+      font-size: 13px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .nav-empty {
+      padding: 8px 10px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
     .sidebar-card,
     .panel,
     .metric-card {
@@ -194,6 +281,30 @@
       min-height: 34px;
       padding: 7px 10px;
       font-size: 13px;
+    }
+
+    .btn.icon-btn {
+      width: 34px;
+      min-width: 34px;
+      height: 34px;
+      min-height: 34px;
+      padding: 0;
+      border-radius: 8px;
+    }
+
+    .btn.icon-btn svg {
+      display: block;
+      width: 17px;
+      height: 17px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .btn.icon-btn.is-danger {
+      color: var(--danger);
     }
 
     .btn.is-danger:hover {
@@ -409,6 +520,41 @@
       margin-bottom: 14px;
     }
 
+    .table-panel-head {
+      align-items: flex-end;
+      padding-bottom: 4px;
+    }
+
+    .table-panel-title {
+      min-width: 0;
+    }
+
+    .table-panel-actions {
+      flex: 1 1 auto;
+      justify-content: flex-end;
+      align-items: center;
+      flex-wrap: nowrap;
+      min-width: 0;
+    }
+
+    .table-panel-actions .search {
+      flex: 1 1 340px;
+      width: min(440px, 100%);
+      max-width: 440px;
+      min-width: 240px;
+      height: 42px;
+      min-height: 42px;
+    }
+
+    .table-panel-actions .btn {
+      flex: 0 0 auto;
+      height: 42px;
+      min-height: 42px;
+      padding-top: 0;
+      padding-bottom: 0;
+      white-space: nowrap;
+    }
+
     .panel h2 {
       margin: 4px 0 0;
       color: var(--navy);
@@ -452,6 +598,71 @@
       margin: 6px 0 0;
       padding-left: 18px;
       font-weight: 600;
+    }
+
+    .toast-stack {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 1600;
+      display: grid;
+      gap: 10px;
+      width: min(420px, calc(100vw - 32px));
+      pointer-events: none;
+    }
+
+    .toast-alert {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin: 0;
+      box-shadow: 0 18px 48px rgba(15, 37, 68, 0.18);
+      pointer-events: auto;
+      animation: toast-slide-in 0.28s ease-out both;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .toast-alert.is-hiding {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    .toast-close {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      width: 28px;
+      height: 28px;
+      padding: 0 0 2px;
+      border: 0;
+      border-radius: 8px;
+      background: rgba(15, 118, 110, 0.1);
+      color: var(--green);
+      font-family: Arial, sans-serif;
+      font-size: 20px;
+      font-weight: 900;
+      line-height: 20px;
+      cursor: pointer;
+    }
+
+    .toast-close:hover,
+    .toast-close:focus-visible {
+      background: rgba(15, 118, 110, 0.18);
+      outline: none;
+    }
+
+    @keyframes toast-slide-in {
+      from {
+        opacity: 0;
+        transform: translateX(28px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
     }
 
     .modal {
@@ -611,6 +822,10 @@
 
     .form-actions .btn {
       width: auto;
+    }
+
+    .panel-actions {
+      margin-top: 14px;
     }
 
     .inline-delete {
@@ -1181,6 +1396,19 @@
         align-items: stretch;
       }
 
+      .table-panel-head {
+        gap: 12px;
+      }
+
+      .table-panel-actions {
+        flex-direction: row;
+      }
+
+      .table-panel-actions .search {
+        max-width: none;
+        min-width: 0;
+      }
+
       .user-chip {
         justify-content: flex-start;
       }
@@ -1429,6 +1657,12 @@
       .nav {
         grid-template-columns: 1fr;
       }
+
+      .toast-stack {
+        right: 12px;
+        bottom: 12px;
+        width: calc(100vw - 24px);
+      }
     }
   </style>
 </head>
@@ -1449,11 +1683,35 @@
       <nav class="nav" aria-label="Navigasi dashboard">
         <a class="{{ $activePage === 'dashboard' ? 'active' : '' }}" href="{{ route($dashboard['route']) }}">Dashboard</a>
         @if ($canSeeAdminData)
-          <a class="{{ $activePage === 'kampus' ? 'active' : '' }}" href="{{ route('dashboard.kampus') }}">Kampus</a>
-          <a class="{{ $activePage === 'regio' ? 'active' : '' }}" href="{{ route('dashboard.regio') }}">Regio</a>
-          <a class="{{ $activePage === 'pengguna' ? 'active' : '' }}" href="{{ route('dashboard.pengguna') }}">Pengguna</a>
-          <a class="{{ $activePage === 'anggota-ktb' ? 'active' : '' }}" href="{{ route('dashboard.anggota-ktb') }}">Anggota KTB</a>
-          <a class="{{ $activePage === 'pohon' ? 'active' : '' }}" href="{{ route('dashboard.pohon') }}">Pohon</a>
+          @if ($user->isSuperAdmin())
+            <a class="{{ $activePage === 'pengguna' ? 'active' : '' }}" href="{{ route('dashboard.pengguna') }}">Pengguna</a>
+            <a class="{{ $activePage === 'regio' ? 'active' : '' }}" href="{{ route('dashboard.regio') }}">Regio</a>
+          @else
+            @php
+              $isCampusNavOpen = in_array($activePage, ['kampus', 'kampus-detail'], true);
+            @endphp
+            <details class="nav-group" {{ $isCampusNavOpen ? 'open' : '' }}>
+              <summary class="{{ $isCampusNavOpen ? 'active' : '' }}">
+                <span>Kampus</span>
+                <span class="nav-chevron" aria-hidden="true"></span>
+              </summary>
+              <div class="nav-submenu">
+                @forelse ($campusOptions as $kampusOption)
+                  <a
+                    class="{{ $activePage === 'kampus-detail' && $selectedKampus && (int) $selectedKampus->kampus_id === (int) $kampusOption->kampus_id ? 'active' : '' }}"
+                    href="{{ route('dashboard.kampus.show', $kampusOption) }}"
+                    title="{{ $kampusOption->nama_kampus }}"
+                  >
+                    {{ $kampusOption->singkatan ?: $kampusOption->nama_kampus }}
+                  </a>
+                @empty
+                  <span class="nav-empty">Belum ada kampus</span>
+                @endforelse
+              </div>
+            </details>
+            <a class="{{ $activePage === 'anggota-ktb' ? 'active' : '' }}" href="{{ route('dashboard.anggota-ktb') }}">Anggota KTB</a>
+            <a class="{{ $activePage === 'pohon' ? 'active' : '' }}" href="{{ route('dashboard.pohon') }}">Pohon</a>
+          @endif
         @else
           <a href="{{ route($dashboard['route']) }}#profil-akun">Profil Akun</a>
         @endif
@@ -1488,16 +1746,29 @@
           </button>
           <div class="user-dropdown" data-user-menu-dropdown hidden>
             <a href="{{ route($dashboard['route']) }}#profil-akun">Profil</a>
-            <form method="POST" action="{{ route('logout') }}">
-              @csrf
-              <button type="submit">Logout</button>
-            </form>
+            @if ($isSwitchingAccess)
+              <form method="POST" action="{{ route('dashboard.access.return') }}">
+                @csrf
+                <button type="submit">Kembali</button>
+              </form>
+            @endif
+            @unless ($isSwitchingAccess)
+              <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit">Logout</button>
+              </form>
+            @endunless
           </div>
         </div>
       </header>
 
       @if (session('success'))
-        <div class="alert">{{ session('success') }}</div>
+        <div class="toast-stack" aria-live="polite" aria-atomic="true">
+          <div class="alert toast-alert" role="status" data-auto-dismiss="5000">
+            <span>{{ session('success') }}</span>
+            <button class="toast-close" type="button" data-toast-close aria-label="Tutup notifikasi">x</button>
+          </div>
+        </div>
       @endif
 
       @if ($errors->any())
@@ -1523,18 +1794,78 @@
         </section>
 
         <section class="content-grid">
-          @if ($canSeeAdminData)
+          @if ($user->isSuperAdmin())
+            @php
+              $adminPreviewRows = $userRows->where('role', 'admin')->take(5);
+              $regioPreviewRows = $regioRows->take(5);
+            @endphp
             <article class="panel">
               <div class="panel-head">
                 <div>
-                  <span class="eyebrow">Distribusi</span>
-                  <h2>Akun Berdasarkan Role</h2>
+                  <span class="eyebrow">Akses Sistem</span>
+                  <h2>Admin Regio Terbaru</h2>
+                </div>
+                <a class="btn is-compact" href="{{ route('dashboard.pengguna') }}">Kelola Pengguna</a>
+              </div>
+              @if ($adminPreviewRows->isEmpty())
+                <div class="empty-state">Belum ada akun admin regio.</div>
+              @else
+                <ul class="member-list">
+                  @foreach ($adminPreviewRows as $adminRow)
+                    <li>
+                      <div class="member-entry">
+                        <strong>{{ $adminRow->nama_lengkap }}</strong>
+                        <span>{{ $adminRow->username }} - {{ $adminRow->regio?->nama_regio ?: 'Tanpa regio' }}</span>
+                      </div>
+                      <span class="badge neutral">{{ ucfirst($adminRow->admin_tipe ?: 'admin') }}</span>
+                    </li>
+                  @endforeach
+                </ul>
+              @endif
+            </article>
+
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <span class="eyebrow">Wilayah</span>
+                  <h2>Regio Pelayanan</h2>
+                </div>
+                <a class="btn is-compact" href="{{ route('dashboard.regio') }}">Kelola Regio</a>
+              </div>
+              @if ($regioPreviewRows->isEmpty())
+                <div class="empty-state">Belum ada data regio.</div>
+              @else
+                <div class="detail-list">
+                  @foreach ($regioPreviewRows as $regio)
+                    <div class="detail-row">
+                      <span class="detail-label">{{ $regio->nama_regio }}</span>
+                      <span class="detail-value">{{ number_format($regio->active_users, 0, ',', '.') }} aktif / {{ number_format($regio->total_users, 0, ',', '.') }} akun</span>
+                    </div>
+                  @endforeach
+                </div>
+              @endif
+            </article>
+          @elseif ($user->isAdmin())
+            @php
+              $memberRoleCounts = [
+                'pkk' => $roleCounts['pkk'] ?? 0,
+                'akk' => $roleCounts['akk'] ?? 0,
+              ];
+              $maxMemberRoleCount = max(1, ...array_values($memberRoleCounts));
+              $activeCampusCount = $campusSummaries->where('is_active', true)->count();
+              $activeGroupCount = $treeGroups->sum('groups_count');
+            @endphp
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <span class="eyebrow">Komposisi KTB</span>
+                  <h2>PKK dan AKK di Regio Ini</h2>
                 </div>
               </div>
               <div class="role-stack">
-                @foreach ($roleCounts as $role => $count)
+                @foreach ($memberRoleCounts as $role => $count)
                   @php
-                    $width = $maxRoleCount > 0 ? round(($count / $maxRoleCount) * 100) : 0;
+                    $width = round(($count / $maxMemberRoleCount) * 100);
                   @endphp
                   <div class="role-row">
                     <header>
@@ -1548,8 +1879,43 @@
                 @endforeach
               </div>
             </article>
-          @endif
 
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <span class="eyebrow">Operasional</span>
+                  <h2>Status Regio {{ $user->regio?->nama_regio ?: '' }}</h2>
+                </div>
+                <span class="badge neutral">{{ ucfirst($user->admin_tipe ?: 'admin') }}</span>
+              </div>
+              <div class="detail-list">
+                <div class="detail-row">
+                  <span class="detail-label">Regio</span>
+                  <span class="detail-value">{{ $user->regio?->nama_regio ?: 'Belum ada regio' }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Kampus Aktif</span>
+                  <span class="detail-value">{{ number_format($activeCampusCount, 0, ',', '.') }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Kelompok</span>
+                  <span class="detail-value">{{ number_format($activeGroupCount, 0, ',', '.') }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Akses Data</span>
+                  <span class="detail-value">Regio sendiri</span>
+                </div>
+              </div>
+              <div class="row-actions panel-actions">
+                <a class="btn is-compact" href="#ringkasan-kampus">Kampus</a>
+                <a class="btn is-compact" href="{{ route('dashboard.anggota-ktb') }}">Anggota KTB</a>
+                <a class="btn is-compact" href="{{ route('dashboard.pohon') }}">Pohon</a>
+              </div>
+            </article>
+          @endif
+        </section>
+
+        <section class="content-grid">
           <article class="panel" id="profil-akun">
             <div class="panel-head">
               <div>
@@ -1567,25 +1933,97 @@
                 <span class="detail-label">Username</span>
                 <span class="detail-value">{{ $user->username }}</span>
               </div>
-              <div class="detail-row">
-                <span class="detail-label">Kampus</span>
-                <span class="detail-value">{{ $kampusName }}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Angkatan</span>
-                <span class="detail-value">{{ $user->angkatan ?: '-' }}</span>
-              </div>
+              @if ($user->isSuperAdmin())
+                <div class="detail-row">
+                  <span class="detail-label">Cakupan</span>
+                  <span class="detail-value">Seluruh regio</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Role</span>
+                  <span class="detail-value">{{ $roleNames[$user->role] ?? strtoupper($user->role) }}</span>
+                </div>
+              @elseif ($user->isAdmin())
+                <div class="detail-row">
+                  <span class="detail-label">Regio</span>
+                  <span class="detail-value">{{ $user->regio?->nama_regio ?: 'Belum ada regio' }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Tipe Admin</span>
+                  <span class="detail-value">{{ ucfirst($user->admin_tipe ?: '-') }}</span>
+                </div>
+              @else
+                <div class="detail-row">
+                  <span class="detail-label">Kampus</span>
+                  <span class="detail-value">{{ $kampusName }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Angkatan</span>
+                  <span class="detail-value">{{ $user->angkatan ?: '-' }}</span>
+                </div>
+              @endif
             </div>
           </article>
+
+          @if ($user->isSuperAdmin())
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <span class="eyebrow">Ruang Kerja</span>
+                  <h2>Kontrol Akses Pusat</h2>
+                </div>
+              </div>
+              <div class="detail-list">
+                <div class="detail-row">
+                  <span class="detail-label">Fokus</span>
+                  <span class="detail-value">Admin dan regio</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Akses Operasional</span>
+                  <span class="detail-value">Melalui pindah akses admin</span>
+                </div>
+              </div>
+              <div class="row-actions panel-actions">
+                <a class="btn is-compact" href="{{ route('dashboard.pengguna') }}">Pengguna</a>
+                <a class="btn is-compact" href="{{ route('dashboard.regio') }}">Regio</a>
+              </div>
+            </article>
+          @elseif ($user->isAdmin())
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <span class="eyebrow">Ruang Kerja</span>
+                  <h2>Kelola Data Pemuridan</h2>
+                </div>
+              </div>
+              <div class="detail-list">
+                <div class="detail-row">
+                  <span class="detail-label">Mode</span>
+                  <span class="detail-value">{{ $user->isAdminEditor() ? 'Editor' : 'Pelihat' }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Batas Data</span>
+                  <span class="detail-value">{{ $user->regio?->nama_regio ?: 'Regio sendiri' }}</span>
+                </div>
+              </div>
+              <div class="row-actions panel-actions">
+                <a class="btn is-compact" href="{{ route('dashboard.anggota-ktb') }}">Lihat Anggota</a>
+                <a class="btn is-compact" href="{{ route('dashboard.pohon') }}">Lihat Pohon</a>
+              </div>
+            </article>
+          @endif
         </section>
+
+        @if ($user->isAdmin())
+          @include('dashboard.partials.campus-summary-table')
+        @endif
       @elseif ($activePage === 'kampus' && $canSeeAdminData)
         <section class="panel" id="ringkasan-kampus">
-          <div class="panel-head">
-            <div>
+          <div class="panel-head table-panel-head">
+            <div class="table-panel-title">
               <span class="eyebrow">Ringkasan</span>
               <h2>Pengguna per Kampus</h2>
             </div>
-            <div class="row-actions">
+            <div class="row-actions table-panel-actions">
               <input class="search" type="search" placeholder="Cari kampus..." data-filter-table="campus-table" aria-label="Cari kampus">
               @if ($canManageData)
                 <button class="btn is-compact" type="button" data-modal-open="modal-kampus-create">Tambah Kampus</button>
@@ -1649,8 +2087,21 @@
                       @if ($canManageData)
                         <td>
                           <div class="row-actions">
-                            <button class="btn is-compact" type="button" data-modal-open="modal-kampus-edit-{{ $kampus->kampus_id }}">Edit</button>
-                            <button class="btn is-compact is-danger" type="button" data-modal-open="modal-kampus-delete-{{ $kampus->kampus_id }}">Hapus</button>
+                            <button class="btn icon-btn" type="button" data-modal-open="modal-kampus-edit-{{ $kampus->kampus_id }}" title="Edit" aria-label="Edit {{ $kampus->nama_kampus }}">
+                              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path d="M12 20h9"></path>
+                                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                              </svg>
+                            </button>
+                            <button class="btn icon-btn is-danger" type="button" data-modal-open="modal-kampus-delete-{{ $kampus->kampus_id }}" title="Hapus" aria-label="Hapus {{ $kampus->nama_kampus }}">
+                              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path d="M3 6h18"></path>
+                                <path d="M8 6V4h8v2"></path>
+                                <path d="m19 6-1 14H6L5 6"></path>
+                                <path d="M10 11v6"></path>
+                                <path d="M14 11v6"></path>
+                              </svg>
+                            </button>
                           </div>
 
                           <div class="modal" id="modal-kampus-edit-{{ $kampus->kampus_id }}" hidden>
@@ -1699,14 +2150,141 @@
             </div>
           @endif
         </section>
+      @elseif ($activePage === 'kampus-detail' && $canSeeAdminData && $selectedKampus)
+        <section class="metric-grid" aria-label="Ringkasan {{ $selectedKampus->nama_kampus }}">
+          <article class="metric-card tone-primary">
+            <span>Total Anggota</span>
+            <strong>{{ number_format($selectedKampus->total_users, 0, ',', '.') }}</strong>
+            <small>{{ $selectedKampus->nama_kampus }}</small>
+          </article>
+          <article class="metric-card tone-success">
+            <span>Anggota Aktif</span>
+            <strong>{{ number_format($selectedKampus->active_users, 0, ',', '.') }}</strong>
+            <small>Akun aktif di kampus ini</small>
+          </article>
+          <article class="metric-card tone-info">
+            <span>PKK</span>
+            <strong>{{ number_format($selectedKampus->pkk_users, 0, ',', '.') }}</strong>
+            <small>Pemimpin kelompok</small>
+          </article>
+          <article class="metric-card tone-warning">
+            <span>Kelompok</span>
+            <strong>{{ number_format($selectedKampus->groups_count, 0, ',', '.') }}</strong>
+            <small>{{ number_format($selectedKampus->active_groups_count, 0, ',', '.') }} kelompok aktif</small>
+          </article>
+        </section>
+
+        <section class="content-grid">
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <span class="eyebrow">Profil Kampus</span>
+                <h2>{{ $selectedKampus->nama_kampus }}</h2>
+              </div>
+              <span class="badge {{ $selectedKampus->is_active ? '' : 'warning' }}">
+                {{ $selectedKampus->is_active ? 'Aktif' : 'Nonaktif' }}
+              </span>
+            </div>
+            <div class="detail-list">
+              <div class="detail-row">
+                <span class="detail-label">Singkatan</span>
+                <span class="detail-value">{{ $selectedKampus->singkatan ?: '-' }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Regio</span>
+                <span class="detail-value">{{ $selectedKampus->regio?->nama_regio ?: '-' }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">AKK</span>
+                <span class="detail-value">{{ number_format($selectedKampus->akk_users, 0, ',', '.') }}</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <span class="eyebrow">Kelompok</span>
+                <h2>Kelompok Pemuridan</h2>
+              </div>
+              <span class="badge neutral">{{ number_format($selectedCampusGroups->count(), 0, ',', '.') }}</span>
+            </div>
+            @if ($selectedCampusGroups->isEmpty())
+              <div class="empty-state">Belum ada kelompok di kampus ini.</div>
+            @else
+              <ul class="member-list">
+                @foreach ($selectedCampusGroups as $group)
+                  <li>
+                    <div class="member-entry">
+                      <strong>{{ $group->nama_kelompok }}</strong>
+                      <span>Pemimpin {{ $group->pemimpin?->nama_lengkap ?: '-' }}</span>
+                    </div>
+                    <span class="badge {{ $group->is_active ? '' : 'warning' }}">
+                      {{ number_format($group->anggota_count, 0, ',', '.') }} anggota
+                    </span>
+                  </li>
+                @endforeach
+              </ul>
+            @endif
+          </article>
+        </section>
+
+        <section class="panel" id="anggota-kampus">
+          <div class="panel-head table-panel-head">
+            <div class="table-panel-title">
+              <span class="eyebrow">Direktori Kampus</span>
+              <h2>Anggota {{ $selectedKampus->singkatan ?: $selectedKampus->nama_kampus }}</h2>
+            </div>
+            <div class="row-actions table-panel-actions">
+              <input class="search" type="search" placeholder="Cari anggota kampus..." data-filter-table="campus-member-table" aria-label="Cari anggota kampus">
+            </div>
+          </div>
+
+          @if ($selectedCampusMembers->isEmpty())
+            <div class="empty-state">Belum ada anggota di kampus ini.</div>
+          @else
+            <div class="table-wrap">
+              <table class="table" id="campus-member-table">
+                <thead>
+                  <tr>
+                    <th>Nama</th>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Angkatan</th>
+                    <th>PKK</th>
+                    <th>Kelompok</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @foreach ($selectedCampusMembers as $member)
+                    <tr>
+                      <td><strong>{{ $member->nama_lengkap }}</strong></td>
+                      <td>{{ $member->username }}</td>
+                      <td><span class="badge neutral">{{ $roleNames[$member->role] ?? strtoupper($member->role) }}</span></td>
+                      <td>{{ $member->angkatan ?: '-' }}</td>
+                      <td>{{ $member->pkkLeader?->nama_lengkap ?: '-' }}</td>
+                      <td>{{ $member->kelompokPemuridan?->nama_kelompok ?: '-' }}</td>
+                      <td>
+                        <span class="badge {{ $member->is_active ? '' : 'warning' }}">
+                          {{ $member->is_active ? 'Aktif' : 'Nonaktif' }}
+                        </span>
+                      </td>
+                    </tr>
+                  @endforeach
+                </tbody>
+              </table>
+            </div>
+          @endif
+        </section>
       @elseif ($activePage === 'regio' && $canSeeAdminData)
         <section class="panel" id="daftar-regio">
-          <div class="panel-head">
-            <div>
+          <div class="panel-head table-panel-head">
+            <div class="table-panel-title">
               <span class="eyebrow">Wilayah</span>
               <h2>Daftar Regio</h2>
             </div>
-            <div class="row-actions">
+            <div class="row-actions table-panel-actions">
               <input class="search" type="search" placeholder="Cari regio..." data-filter-table="regio-table" aria-label="Cari regio">
               @if ($canManageData)
                 <button class="btn is-compact" type="button" data-modal-open="modal-regio-create">Tambah Regio</button>
@@ -1766,7 +2344,12 @@
                       <td>{{ number_format($regio->akk_users, 0, ',', '.') }}</td>
                       @if ($canManageData)
                         <td>
-                          <button class="btn is-compact" type="button" data-modal-open="modal-regio-edit-{{ $regio->regio_id }}">Edit</button>
+                          <button class="btn icon-btn" type="button" data-modal-open="modal-regio-edit-{{ $regio->regio_id }}" title="Edit" aria-label="Edit {{ $regio->nama_regio }}">
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                              <path d="M12 20h9"></path>
+                              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                            </svg>
+                          </button>
 
                           <div class="modal" id="modal-regio-edit-{{ $regio->regio_id }}" hidden>
                             <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-regio-edit-title-{{ $regio->regio_id }}">
@@ -1799,16 +2382,39 @@
           $directoryEmpty = $activePage === 'anggota-ktb' ? 'Belum ada data anggota KTB.' : 'Belum ada data pengguna admin.';
           $directorySearch = $activePage === 'anggota-ktb' ? 'Cari anggota KTB...' : 'Cari pengguna admin...';
           $directoryTableId = $activePage === 'anggota-ktb' ? 'member-table' : 'user-table';
+          $directoryCanManageAdmins = $activePage === 'pengguna' && $canManageData;
         @endphp
 
         <section class="panel" id="{{ $activePage === 'anggota-ktb' ? 'daftar-anggota-ktb' : 'daftar-pengguna' }}">
-          <div class="panel-head">
-            <div>
+          <div class="panel-head table-panel-head">
+            <div class="table-panel-title">
               <span class="eyebrow">{{ $directoryEyebrow }}</span>
               <h2>{{ $directoryTitle }}</h2>
             </div>
-            <input class="search" type="search" placeholder="{{ $directorySearch }}" data-filter-table="{{ $directoryTableId }}" aria-label="{{ $directorySearch }}">
+            <div class="row-actions table-panel-actions">
+              <input class="search" type="search" placeholder="{{ $directorySearch }}" data-filter-table="{{ $directoryTableId }}" aria-label="{{ $directorySearch }}">
+              @if ($directoryCanManageAdmins)
+                <button class="btn is-compact" type="button" data-modal-open="modal-admin-user-create">Tambah Admin</button>
+              @endif
+            </div>
           </div>
+
+          @if ($directoryCanManageAdmins)
+            <div class="modal" id="modal-admin-user-create" hidden>
+              <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-admin-user-create-title">
+                <div class="modal-head">
+                  <div>
+                    <span class="eyebrow">Tambah</span>
+                    <h2 id="modal-admin-user-create-title">Pengguna Admin</h2>
+                  </div>
+                  <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+                </div>
+                <div class="modal-body">
+                  @include('dashboard.partials.admin-user-form')
+                </div>
+              </div>
+            </div>
+          @endif
 
           @if ($directoryRows->isEmpty())
             <div class="empty-state">{{ $directoryEmpty }}</div>
@@ -1824,6 +2430,9 @@
                     <th>Kampus</th>
                     <th>Angkatan</th>
                     <th>Status</th>
+                    @if ($directoryCanManageAdmins)
+                      <th>Aksi</th>
+                    @endif
                   </tr>
                 </thead>
                 <tbody>
@@ -1846,6 +2455,83 @@
                           {{ $row->is_active ? 'Aktif' : 'Nonaktif' }}
                         </span>
                       </td>
+                      @if ($directoryCanManageAdmins)
+                        <td>
+                          @if ($row->role === 'admin')
+                            <div class="row-actions">
+                              <form method="POST" action="{{ route('dashboard.pengguna.switch-access', $row) }}" class="inline-delete">
+                                @csrf
+                                <button class="btn icon-btn" type="submit" title="Pindah akses" aria-label="Pindah akses ke {{ $row->nama_lengkap }}">
+                                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                                    <path d="m10 17 5-5-5-5"></path>
+                                    <path d="M15 12H3"></path>
+                                  </svg>
+                                </button>
+                              </form>
+                              <button class="btn icon-btn" type="button" data-modal-open="modal-admin-user-edit-{{ $row->user_id }}" title="Edit" aria-label="Edit {{ $row->nama_lengkap }}">
+                                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                  <path d="M12 20h9"></path>
+                                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                                </svg>
+                              </button>
+                              @if ($row->user_id !== $user->user_id)
+                                <button class="btn icon-btn is-danger" type="button" data-modal-open="modal-admin-user-delete-{{ $row->user_id }}" title="Hapus" aria-label="Hapus {{ $row->nama_lengkap }}">
+                                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                    <path d="M3 6h18"></path>
+                                    <path d="M8 6V4h8v2"></path>
+                                    <path d="m19 6-1 14H6L5 6"></path>
+                                    <path d="M10 11v6"></path>
+                                    <path d="M14 11v6"></path>
+                                  </svg>
+                                </button>
+                              @endif
+                            </div>
+
+                            <div class="modal" id="modal-admin-user-edit-{{ $row->user_id }}" hidden>
+                              <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-admin-user-edit-title-{{ $row->user_id }}">
+                                <div class="modal-head">
+                                  <div>
+                                    <span class="eyebrow">Edit</span>
+                                    <h2 id="modal-admin-user-edit-title-{{ $row->user_id }}">{{ $row->nama_lengkap }}</h2>
+                                  </div>
+                                  <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+                                </div>
+                                <div class="modal-body">
+                                  @include('dashboard.partials.admin-user-form', ['adminUser' => $row])
+                                </div>
+                              </div>
+                            </div>
+
+                            @if ($row->user_id !== $user->user_id)
+                              <div class="modal" id="modal-admin-user-delete-{{ $row->user_id }}" hidden>
+                                <div class="modal-panel is-small" role="dialog" aria-modal="true" aria-labelledby="modal-admin-user-delete-title-{{ $row->user_id }}">
+                                  <div class="modal-head">
+                                    <div>
+                                      <span class="eyebrow">Hapus</span>
+                                      <h2 id="modal-admin-user-delete-title-{{ $row->user_id }}">Pengguna Admin</h2>
+                                    </div>
+                                    <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+                                  </div>
+                                  <div class="modal-body">
+                                    <p class="muted">Hapus akun admin {{ $row->nama_lengkap }}? Akses login akun ini akan hilang.</p>
+                                    <form method="POST" action="{{ route('dashboard.pengguna.destroy', $row) }}" class="inline-delete">
+                                      @csrf
+                                      @method('DELETE')
+                                      <div class="form-actions">
+                                        <button class="btn is-compact is-danger" type="submit">Hapus Pengguna</button>
+                                        <button class="btn is-compact" type="button" data-modal-close>Batal</button>
+                                      </div>
+                                    </form>
+                                  </div>
+                                </div>
+                              </div>
+                            @endif
+                          @else
+                            <span class="muted">-</span>
+                          @endif
+                        </td>
+                      @endif
                     </tr>
                   @endforeach
                 </tbody>
@@ -2073,7 +2759,7 @@
                         <option value="">Tanpa kampus</option>
                         @foreach ($campusOptions as $option)
                           <option value="{{ $option->kampus_id }}" {{ (string) old('kampus_id') === (string) $option->kampus_id ? 'selected' : '' }}>
-                            {{ $option->nama_kampus }}{{ $option->singkatan ? ' ('.$option->singkatan.')' : '' }}{{ $option->regio?->nama_regio ? ' - '.$option->regio->nama_regio : '' }}
+                            {{ $option->nama_kampus }}{{ $option->singkatan ? ' ('.$option->singkatan.')' : '' }}{{ $user->isSuperAdmin() && $option->regio?->nama_regio ? ' - '.$option->regio->nama_regio : '' }}
                           </option>
                         @endforeach
                       </select>
@@ -2635,6 +3321,35 @@
         runTreeSearch();
       });
     }
+
+    function dismissToast(toast) {
+      if (!toast || toast.classList.contains('is-hiding')) return;
+
+        toast.classList.add('is-hiding');
+
+        window.setTimeout(function () {
+          var stack = toast.closest('.toast-stack');
+          toast.remove();
+
+          if (stack && !stack.children.length) {
+            stack.remove();
+          }
+        }, 220);
+    }
+
+    document.querySelectorAll('[data-auto-dismiss]').forEach(function (toast) {
+      var delay = Number(toast.getAttribute('data-auto-dismiss')) || 5000;
+
+      window.setTimeout(function () {
+        dismissToast(toast);
+      }, delay);
+    });
+
+    document.querySelectorAll('[data-toast-close]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        dismissToast(button.closest('[data-auto-dismiss]'));
+      });
+    });
   </script>
 </body>
 </html>

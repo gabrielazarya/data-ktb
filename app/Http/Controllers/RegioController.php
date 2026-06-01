@@ -66,7 +66,7 @@ class RegioController extends Controller
         $user = Auth::user();
 
         abort_unless(
-            $user && ($user->isSuperAdmin() || $user->isAdminEditor()),
+            $user && $user->isSuperAdmin(),
             403
         );
     }

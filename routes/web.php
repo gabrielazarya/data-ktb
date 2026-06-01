@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AccessSwitchController;
+use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KampusController;
 use App\Http\Controllers\RegioController;
@@ -23,6 +25,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/pkk/dashboard', [DashboardController::class, 'pkk'])->name('pkk.dashboard');
     Route::get('/akk/dashboard', [DashboardController::class, 'akk'])->name('akk.dashboard');
     Route::get('/dashboard/kampus', [DashboardController::class, 'kampus'])->name('dashboard.kampus');
+    Route::get('/dashboard/kampus/{kampus}', [DashboardController::class, 'kampusDetail'])->name('dashboard.kampus.show');
     Route::post('/dashboard/kampus', [KampusController::class, 'store'])->name('dashboard.kampus.store');
     Route::put('/dashboard/kampus/{kampus}', [KampusController::class, 'update'])->name('dashboard.kampus.update');
     Route::delete('/dashboard/kampus/{kampus}', [KampusController::class, 'destroy'])->name('dashboard.kampus.destroy');
@@ -30,6 +33,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/dashboard/regio', [RegioController::class, 'store'])->name('dashboard.regio.store');
     Route::put('/dashboard/regio/{regio}', [RegioController::class, 'update'])->name('dashboard.regio.update');
     Route::get('/dashboard/pengguna', [DashboardController::class, 'pengguna'])->name('dashboard.pengguna');
+    Route::post('/dashboard/pengguna', [AdminUserController::class, 'store'])->name('dashboard.pengguna.store');
+    Route::put('/dashboard/pengguna/{user}', [AdminUserController::class, 'update'])->name('dashboard.pengguna.update');
+    Route::delete('/dashboard/pengguna/{user}', [AdminUserController::class, 'destroy'])->name('dashboard.pengguna.destroy');
+    Route::post('/dashboard/pengguna/{user}/akses', [AccessSwitchController::class, 'switchToAdmin'])->name('dashboard.pengguna.switch-access');
+    Route::post('/dashboard/akses/kembali', [AccessSwitchController::class, 'returnToSuperAdmin'])->name('dashboard.access.return');
     Route::get('/dashboard/anggota-ktb', [DashboardController::class, 'anggotaKtb'])->name('dashboard.anggota-ktb');
     Route::get('/dashboard/pohon-pemuridan', [DashboardController::class, 'pohon'])->name('dashboard.pohon');
     Route::post('/dashboard/pohon-pemuridan/kelompok', [TreeGroupController::class, 'storeGroup'])->name('dashboard.pohon.kelompok.store');
