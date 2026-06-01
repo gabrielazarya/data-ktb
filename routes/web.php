@@ -26,6 +26,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/dashboard/kampus/{kampus}', [KampusController::class, 'update'])->name('dashboard.kampus.update');
     Route::delete('/dashboard/kampus/{kampus}', [KampusController::class, 'destroy'])->name('dashboard.kampus.destroy');
     Route::get('/dashboard/pengguna', [DashboardController::class, 'pengguna'])->name('dashboard.pengguna');
+    Route::get('/dashboard/anggota-ktb', [DashboardController::class, 'anggotaKtb'])->name('dashboard.anggota-ktb');
     Route::get('/dashboard/pohon-pemuridan', [DashboardController::class, 'pohon'])->name('dashboard.pohon');
     Route::post('/dashboard/pohon-pemuridan/kelompok', [TreeGroupController::class, 'storeGroup'])->name('dashboard.pohon.kelompok.store');
     Route::post('/dashboard/pohon-pemuridan/anggota', [TreeGroupController::class, 'storeMember'])->name('dashboard.pohon.anggota.store');

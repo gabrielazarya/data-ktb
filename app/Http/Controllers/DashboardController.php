@@ -46,6 +46,11 @@ class DashboardController extends Controller
         return $this->showAdminSection('pengguna');
     }
 
+    public function anggotaKtb(): View
+    {
+        return $this->showAdminSection('anggota-ktb');
+    }
+
     public function pohon(): View
     {
         return $this->showAdminSection('pohon');
@@ -89,6 +94,7 @@ class DashboardController extends Controller
             'roleCounts' => $stats['roleCounts'] ?? $this->blankRoleCounts(),
             'campusSummaries' => $canSeeAdminData ? $this->campusSummaries() : collect(),
             'userRows' => $canSeeAdminData ? $this->userRows() : collect(),
+            'memberRows' => $canSeeAdminData ? $this->memberRows() : collect(),
             'campusRoleGroups' => $campusRoleGroups,
             'treeGroups' => $treeGroups,
             'treeSearchNames' => $canSeeAdminData ? $this->treeSearchNames($treeGroups) : collect(),
@@ -194,6 +200,16 @@ class DashboardController extends Controller
     {
         return User::query()
             ->with(['kampus', 'regio', 'kategoriJurusan', 'pkkLeader.kampus'])
+            ->whereIn('role', ['admin', 'super_admin'])
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
+    private function memberRows()
+    {
+        return User::query()
+            ->with(['kampus', 'regio', 'kategoriJurusan', 'pkkLeader.kampus', 'kelompokPemuridan'])
+            ->whereIn('role', ['akk', 'pkk'])
             ->orderByDesc('created_at')
             ->get();
     }
@@ -410,7 +426,12 @@ class DashboardController extends Controller
             'pengguna' => array_merge($config, [
                 'title' => 'Pengguna',
                 'eyebrow' => 'Data Pengguna',
-                'subtitle' => 'Daftar akun yang terdaftar di Sistem KTB.',
+                'subtitle' => 'Daftar akun admin dan super admin Sistem KTB.',
+            ]),
+            'anggota-ktb' => array_merge($config, [
+                'title' => 'Anggota KTB',
+                'eyebrow' => 'Data Anggota',
+                'subtitle' => 'Daftar akun AKK dan PKK yang terdaftar di Sistem KTB.',
             ]),
             'pohon' => array_merge($config, [
                 'title' => 'Pohon Pemuridan',

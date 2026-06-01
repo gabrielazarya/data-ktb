@@ -9,6 +9,9 @@
   $accountStatus = $user->is_active ? 'Aktif' : 'Nonaktif';
   $kampusName = $user->kampus?->nama_kampus ?: 'Belum terhubung kampus';
   $kampusShort = $user->kampus?->singkatan ?: '-';
+  $profilePhoto = $user->foto_profil
+      ? (filter_var($user->foto_profil, FILTER_VALIDATE_URL) ? $user->foto_profil : asset(ltrim($user->foto_profil, '/')))
+      : asset('images/default-user-profile.svg');
   $activePage = $activePage ?? 'dashboard';
   $maxRoleCount = max(array_values($roleCounts));
 @endphp
@@ -225,24 +228,125 @@
       line-height: 1.6;
     }
 
+    .user-menu {
+      position: relative;
+      width: 225px;
+      flex: 0 0 auto;
+    }
+
     .user-chip {
-      min-width: 220px;
-      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 9px;
+      width: 100%;
+      min-height: 65px;
+      padding: 9px 12px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: rgba(255, 255, 255, 0.76);
-      text-align: right;
+      text-align: left;
+      overflow: hidden;
+      cursor: pointer;
     }
 
-    .user-chip strong,
-    .user-chip span {
+    .user-chip:hover,
+    .user-chip:focus-visible {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+    }
+
+    .user-chip-avatar {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 39px;
+      width: 39px;
+      height: 39px;
+      border: 2px solid var(--line);
+      border-radius: 50%;
+      background: linear-gradient(180deg, #ffffff, #f3f7f5);
+      box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.92);
+      overflow: hidden;
+    }
+
+    .user-chip-avatar img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .user-chip-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .user-chip-body strong,
+    .user-chip-body span {
       display: block;
     }
 
-    .user-chip span {
+    .user-chip-body strong {
+      color: var(--navy);
+      font-size: 16px;
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .user-chip-body span {
       margin-top: 4px;
       color: var(--muted);
-      font-size: 13px;
+      font-size: 12px;
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .user-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      z-index: 20;
+      width: 100%;
+      padding: 6px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .user-dropdown[hidden] {
+      display: none;
+    }
+
+    .user-dropdown a,
+    .user-dropdown button {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      min-height: 38px;
+      padding: 8px 10px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: #33413d;
+      font-weight: 800;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .user-dropdown a:hover,
+    .user-dropdown button:hover {
+      background: var(--green-soft);
+      color: var(--green);
+    }
+
+    .user-dropdown form {
+      margin: 0;
     }
 
     .metric-grid {
@@ -1078,8 +1182,12 @@
       }
 
       .user-chip {
-        min-width: 0;
-        text-align: left;
+        justify-content: flex-start;
+      }
+
+      .user-menu {
+        align-self: flex-start;
+        width: min(225px, 100%);
       }
 
       .metric-grid,
@@ -1142,22 +1250,13 @@
         @if ($canSeeAdminData)
           <a class="{{ $activePage === 'kampus' ? 'active' : '' }}" href="{{ route('dashboard.kampus') }}">Kampus</a>
           <a class="{{ $activePage === 'pengguna' ? 'active' : '' }}" href="{{ route('dashboard.pengguna') }}">Pengguna</a>
+          <a class="{{ $activePage === 'anggota-ktb' ? 'active' : '' }}" href="{{ route('dashboard.anggota-ktb') }}">Anggota KTB</a>
           <a class="{{ $activePage === 'pohon' ? 'active' : '' }}" href="{{ route('dashboard.pohon') }}">Pohon</a>
         @else
           <a href="{{ route($dashboard['route']) }}#profil-akun">Profil Akun</a>
         @endif
       </nav>
 
-      <section class="sidebar-card">
-        <span class="eyebrow">Akses Login</span>
-        <strong>{{ $dashboard['roleLabel'] }}</strong>
-        <small>{{ $user->username }} - {{ $accountStatus }}</small>
-      </section>
-
-      <form method="POST" action="{{ route('logout') }}" class="logout-form">
-        @csrf
-        <button type="submit" class="btn">Logout</button>
-      </form>
     </aside>
 
     <main class="main">
@@ -1167,9 +1266,23 @@
           <h1>{{ $dashboard['title'] }}</h1>
           <p>{{ $dashboard['subtitle'] }}</p>
         </div>
-        <div class="user-chip">
-          <strong>{{ $user->nama_lengkap }}</strong>
-          <span>{{ $roleNames[$user->role] ?? strtoupper($user->role) }} - {{ $kampusShort }}</span>
+        <div class="user-menu" data-user-menu>
+          <button class="user-chip" type="button" data-user-menu-toggle aria-haspopup="true" aria-expanded="false">
+            <span class="user-chip-avatar">
+              <img src="{{ $profilePhoto }}" alt="Foto profil {{ $user->nama_lengkap }}">
+            </span>
+            <span class="user-chip-body">
+              <strong>{{ $user->nama_lengkap }}</strong>
+              <span>{{ $roleNames[$user->role] ?? strtoupper($user->role) }} - {{ $kampusShort }}</span>
+            </span>
+          </button>
+          <div class="user-dropdown" data-user-menu-dropdown hidden>
+            <a href="{{ route($dashboard['route']) }}#profil-akun">Profil</a>
+            <form method="POST" action="{{ route('logout') }}">
+              @csrf
+              <button type="submit">Logout</button>
+            </form>
+          </div>
         </div>
       </header>
 
@@ -1374,21 +1487,30 @@
             </div>
           @endif
         </section>
-      @elseif ($activePage === 'pengguna' && $canSeeAdminData)
-        <section class="panel" id="daftar-pengguna">
+      @elseif (in_array($activePage, ['pengguna', 'anggota-ktb'], true) && $canSeeAdminData)
+        @php
+          $directoryRows = $activePage === 'anggota-ktb' ? $memberRows : $userRows;
+          $directoryTitle = $activePage === 'anggota-ktb' ? 'Anggota KTB' : 'Daftar Pengguna';
+          $directoryEyebrow = $activePage === 'anggota-ktb' ? 'Direktori KTB' : 'Direktori Admin';
+          $directoryEmpty = $activePage === 'anggota-ktb' ? 'Belum ada data anggota KTB.' : 'Belum ada data pengguna admin.';
+          $directorySearch = $activePage === 'anggota-ktb' ? 'Cari anggota KTB...' : 'Cari pengguna admin...';
+          $directoryTableId = $activePage === 'anggota-ktb' ? 'member-table' : 'user-table';
+        @endphp
+
+        <section class="panel" id="{{ $activePage === 'anggota-ktb' ? 'daftar-anggota-ktb' : 'daftar-pengguna' }}">
           <div class="panel-head">
             <div>
-              <span class="eyebrow">Direktori</span>
-              <h2>Daftar Pengguna</h2>
+              <span class="eyebrow">{{ $directoryEyebrow }}</span>
+              <h2>{{ $directoryTitle }}</h2>
             </div>
-            <input class="search" type="search" placeholder="Cari pengguna..." data-filter-table="user-table" aria-label="Cari pengguna">
+            <input class="search" type="search" placeholder="{{ $directorySearch }}" data-filter-table="{{ $directoryTableId }}" aria-label="{{ $directorySearch }}">
           </div>
 
-          @if ($userRows->isEmpty())
-            <div class="empty-state">Belum ada data pengguna.</div>
+          @if ($directoryRows->isEmpty())
+            <div class="empty-state">{{ $directoryEmpty }}</div>
           @else
             <div class="table-wrap">
-              <table class="table" id="user-table">
+              <table class="table" id="{{ $directoryTableId }}">
                 <thead>
                   <tr>
                     <th>Nama</th>
@@ -1400,7 +1522,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  @foreach ($userRows as $row)
+                  @foreach ($directoryRows as $row)
                     <tr>
                       <td>
                         <strong>{{ $row->nama_lengkap }}</strong>
@@ -1680,6 +1802,35 @@
   <script>
     var activeModal = null;
     var lastModalTrigger = null;
+    var userMenu = document.querySelector('[data-user-menu]');
+    var userMenuToggle = userMenu ? userMenu.querySelector('[data-user-menu-toggle]') : null;
+    var userMenuDropdown = userMenu ? userMenu.querySelector('[data-user-menu-dropdown]') : null;
+
+    function closeUserMenu() {
+      if (!userMenuDropdown || !userMenuToggle) return;
+      userMenuDropdown.hidden = true;
+      userMenuToggle.setAttribute('aria-expanded', 'false');
+    }
+
+    if (userMenuToggle && userMenuDropdown) {
+      userMenuToggle.addEventListener('click', function () {
+        var willOpen = userMenuDropdown.hidden;
+        userMenuDropdown.hidden = !willOpen;
+        userMenuToggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      });
+
+      document.addEventListener('click', function (event) {
+        if (!userMenu.contains(event.target)) {
+          closeUserMenu();
+        }
+      });
+
+      window.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+          closeUserMenu();
+        }
+      });
+    }
 
     function openModal(modal, trigger) {
       if (!modal) return;

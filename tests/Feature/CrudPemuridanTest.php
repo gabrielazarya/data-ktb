@@ -57,6 +57,57 @@ class CrudPemuridanTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_pengguna_and_anggota_ktb_pages_are_separated_by_role(): void
+    {
+        $superAdmin = User::query()->create([
+            'username' => 'superadmin_direktori_test',
+            'password' => 'password',
+            'nama_lengkap' => 'Super Admin Direktori Test',
+            'role' => 'super_admin',
+            'is_active' => true,
+        ]);
+
+        User::query()->create([
+            'username' => 'admin_direktori_test',
+            'password' => 'password',
+            'nama_lengkap' => 'Operator Direktori Test',
+            'role' => 'admin',
+            'admin_tipe' => 'editor',
+            'is_active' => true,
+        ]);
+
+        User::query()->create([
+            'username' => 'pkk_direktori_test',
+            'password' => 'password',
+            'nama_lengkap' => 'PKK Direktori Test',
+            'role' => 'pkk',
+            'is_active' => true,
+        ]);
+
+        User::query()->create([
+            'username' => 'akk_direktori_test',
+            'password' => 'password',
+            'nama_lengkap' => 'AKK Direktori Test',
+            'role' => 'akk',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($superAdmin)
+            ->get(route('dashboard.pengguna'))
+            ->assertOk()
+            ->assertSee('Super Admin Direktori Test')
+            ->assertSee('Operator Direktori Test')
+            ->assertDontSee('PKK Direktori Test')
+            ->assertDontSee('AKK Direktori Test');
+
+        $this->actingAs($superAdmin)
+            ->get(route('dashboard.anggota-ktb'))
+            ->assertOk()
+            ->assertSee('PKK Direktori Test')
+            ->assertSee('AKK Direktori Test')
+            ->assertDontSee('Operator Direktori Test');
+    }
+
     public function test_pohon_displays_empty_campus_and_super_admin_can_manage_tree_flow(): void
     {
         $admin = User::query()->create([
