@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KampusController;
+use App\Http\Controllers\TreeGroupController;
 use Illuminate\Support\Facades\Route;
 
 // Landing Page
@@ -26,4 +27,6 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/dashboard/kampus/{kampus}', [KampusController::class, 'destroy'])->name('dashboard.kampus.destroy');
     Route::get('/dashboard/pengguna', [DashboardController::class, 'pengguna'])->name('dashboard.pengguna');
     Route::get('/dashboard/pohon-pemuridan', [DashboardController::class, 'pohon'])->name('dashboard.pohon');
+    Route::post('/dashboard/pohon-pemuridan/kelompok', [TreeGroupController::class, 'storeGroup'])->name('dashboard.pohon.kelompok.store');
+    Route::post('/dashboard/pohon-pemuridan/anggota', [TreeGroupController::class, 'storeMember'])->name('dashboard.pohon.anggota.store');
 });

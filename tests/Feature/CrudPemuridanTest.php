@@ -2,8 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\Kampus;
+use App\Models\KelompokPemuridan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class CrudPemuridanTest extends TestCase
@@ -52,5 +55,138 @@ class CrudPemuridanTest extends TestCase
                 'is_active' => '1',
             ])
             ->assertForbidden();
+    }
+
+    public function test_pohon_displays_empty_campus_and_super_admin_can_manage_tree_flow(): void
+    {
+        $admin = User::query()->create([
+            'username' => 'superadmin_tree_test',
+            'password' => 'password',
+            'nama_lengkap' => 'Super Admin Tree Test',
+            'role' => 'super_admin',
+            'is_active' => true,
+        ]);
+
+        $kampus = Kampus::query()->create([
+            'nama_kampus' => 'Kampus Kosong',
+            'singkatan' => 'KK',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('dashboard.pohon'))
+            ->assertOk()
+            ->assertSee('Kampus Kosong')
+            ->assertSee('Belum ada anggota')
+            ->assertSee('Tambah Anggota');
+
+        $this->actingAs($admin)
+            ->post(route('dashboard.pohon.anggota.store'), [
+                'nama_lengkap' => 'Anggota Kampus Tree Test',
+                'kampus_id' => $kampus->kampus_id,
+                'angkatan' => 2025,
+                'is_active' => '1',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('users', [
+            'nama_lengkap' => 'Anggota Kampus Tree Test',
+            'role' => 'akk',
+            'pkk_id' => null,
+            'kelompok_id' => null,
+            'kampus_id' => $kampus->kampus_id,
+            'angkatan' => 2025,
+            'is_active' => true,
+        ]);
+
+        $campusMember = User::query()->where('nama_lengkap', 'Anggota Kampus Tree Test')->firstOrFail();
+        $this->assertSame('user'.$campusMember->user_id, $campusMember->username);
+        $this->assertTrue(Hash::check('user', $campusMember->password));
+
+        $response = $this->actingAs($admin)
+            ->get(route('dashboard.pohon'))
+            ->assertOk();
+
+        $this->assertMatchesRegularExpression(
+            '/data-node-name="Anggota Kampus Tree Test"[\s\S]*?<span class="badge\s*">AKK<\/span>/',
+            $response->getContent()
+        );
+
+        $pkk = $campusMember;
+
+        $this->actingAs($admin)
+            ->post(route('dashboard.pohon.kelompok.store'), [
+                'pemimpin_id' => $pkk->user_id,
+                'nama_kelompok' => 'Kelompok Anggota Kampus Tree Test',
+                'is_active' => '1',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('kelompok_pemuridan', [
+            'nama_kelompok' => 'Kelompok Anggota Kampus Tree Test',
+            'pemimpin_id' => $pkk->user_id,
+            'kampus_id' => $kampus->kampus_id,
+            'is_active' => true,
+        ]);
+
+        $this->assertDatabaseHas('users', [
+            'user_id' => $pkk->user_id,
+            'role' => 'pkk',
+        ]);
+
+        $group = KelompokPemuridan::query()->where('nama_kelompok', 'Kelompok Anggota Kampus Tree Test')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->get(route('dashboard.pohon'))
+            ->assertOk()
+            ->assertSee('Anggota Kampus Tree Test')
+            ->assertSee('Kelompok Anggota Kampus Tree Test');
+
+        $this->actingAs($admin)
+            ->post(route('dashboard.pohon.anggota.store'), [
+                'kelompok_id' => $group->kelompok_id,
+                'nama_lengkap' => 'Anggota Tree Test',
+                'angkatan' => 2026,
+                'is_active' => '1',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('users', [
+            'nama_lengkap' => 'Anggota Tree Test',
+            'role' => 'akk',
+            'pkk_id' => $pkk->user_id,
+            'kelompok_id' => $group->kelompok_id,
+            'kampus_id' => $kampus->kampus_id,
+            'angkatan' => 2026,
+            'is_active' => true,
+        ]);
+
+        $member = User::query()->where('nama_lengkap', 'Anggota Tree Test')->firstOrFail();
+        $this->assertSame('user'.$member->user_id, $member->username);
+        $this->assertTrue(Hash::check('user', $member->password));
+
+        $this->actingAs($admin)
+            ->post(route('dashboard.pohon.kelompok.store'), [
+                'pemimpin_id' => $member->user_id,
+                'nama_kelompok' => 'Kelompok Anak Tree Test',
+                'is_active' => '1',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('users', [
+            'user_id' => $member->user_id,
+            'role' => 'pkk',
+            'pkk_id' => $pkk->user_id,
+            'kelompok_id' => $group->kelompok_id,
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->get(route('dashboard.pohon'))
+            ->assertOk();
+
+        $this->assertMatchesRegularExpression(
+            '/data-node-name="Kelompok Anggota Kampus Tree Test"[\s\S]*?<ul class="tree-v2-children tree-v2-level-members">[\s\S]*?data-node-name="Anggota Tree Test"[\s\S]*?data-node-name="Kelompok Anak Tree Test"/',
+            $response->getContent()
+        );
     }
 }

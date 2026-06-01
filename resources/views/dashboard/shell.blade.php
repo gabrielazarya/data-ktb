@@ -11,7 +11,6 @@
   $kampusShort = $user->kampus?->singkatan ?: '-';
   $activePage = $activePage ?? 'dashboard';
   $maxRoleCount = max(array_values($roleCounts));
-  $oldFormRole = old('_form_role');
 @endphp
 <!doctype html>
 <html lang="id">
@@ -883,6 +882,14 @@
       box-shadow: 0 18px 32px rgba(15, 23, 42, 0.14);
     }
 
+    .tree-v2-node.is-actionable {
+      cursor: pointer;
+    }
+
+    .tree-v2-node.is-actionable:hover {
+      border-color: var(--gold);
+    }
+
     .tree-v2-node.is-search-hit {
       border-color: var(--gold);
       box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.28), 0 18px 32px rgba(245, 166, 35, 0.18);
@@ -906,6 +913,15 @@
     .tree-v2-person.is-akk {
       background: linear-gradient(150deg, #f7faf9, #e7f3ef);
       border-color: #9bd7cd;
+    }
+
+    .tree-v2-empty-node {
+      align-items: center;
+      justify-content: center;
+      background: #f8fafc;
+      border-style: dashed;
+      color: var(--muted);
+      text-align: center;
     }
 
     .tree-v2-node-head {
@@ -997,6 +1013,37 @@
       --tree-v2-gap: 12px;
     }
 
+    .tree-v2-level-groups {
+      --tree-v2-gap: 14px;
+    }
+
+    .tree-action-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 0;
+    }
+
+    .tree-action-buttons [hidden] {
+      display: none !important;
+    }
+
+    .tree-action-detail {
+      margin-top: 14px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fbf9;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .tree-action-detail strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--navy);
+    }
+
     @media (max-width: 1040px) {
       .metric-grid,
       .content-grid,
@@ -1071,6 +1118,10 @@
       .tree-v2-root,
       .tree-v2-children {
         gap: 10px;
+      }
+
+      .tree-action-buttons {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -1401,47 +1452,74 @@
                 <div class="tree-v2-graph" role="tree" aria-label="Grafik pohon pemuridan">
                   <ul class="tree-v2-root">
                     @foreach ($treeGroups as $group)
+                      @php
+                        $groupCampusId = $group['campus_id'] ?? null;
+                        $groupCampusLabel = $group['short'] !== '-' ? $group['short'] : $group['name'];
+                        $groupMeta = $group['total'].' anggota - '.($group['groups_count'] ?? 0).' kelompok';
+                      @endphp
                       <li class="tree-v2-item">
-                        <article class="tree-v2-node tree-v2-campus" data-search-name="{{ $group['name'] }} {{ $group['short'] }}" tabindex="0" aria-label="{{ $group['name'] }}">
+                        <article
+                          class="tree-v2-node tree-v2-campus is-actionable"
+                          data-tree-v2-node-action="campus"
+                          data-node-name="{{ $groupCampusLabel }}"
+                          data-node-meta="{{ $groupMeta }}"
+                          data-campus-id="{{ $groupCampusId ?: '' }}"
+                          data-campus-name="{{ $group['name'] }}"
+                          data-search-name="{{ $group['name'] }} {{ $group['short'] }}"
+                          tabindex="0"
+                          role="button"
+                          aria-label="Aksi untuk {{ $group['name'] }}"
+                        >
                           <div class="tree-v2-node-head">
-                            <div class="tree-v2-name" title="{{ $group['name'] }}">{{ $group['name'] }}</div>
+                            <div class="tree-v2-name" title="{{ $group['name'] }}">{{ $groupCampusLabel }}</div>
                             <span class="badge neutral">Kampus</span>
                           </div>
-                          <div class="tree-v2-meta">{{ $group['pkk']->count() }} PKK - {{ $group['akk']->count() }} AKK</div>
+                          <div class="tree-v2-meta">{{ $groupMeta }}</div>
                         </article>
 
                         <ul class="tree-v2-children">
-                          @foreach ($group['branches'] as $branch)
+                          @if ($group['branches']->isEmpty() && $group['unassigned_akk']->isEmpty())
                             <li class="tree-v2-item">
-                              <article class="tree-v2-node tree-v2-person is-pkk" data-search-name="{{ $branch['pkk']->nama_lengkap }}" tabindex="0" aria-label="{{ $branch['pkk']->nama_lengkap }}">
-                                <div class="tree-v2-node-head">
-                                  <div class="tree-v2-name" title="{{ $branch['pkk']->nama_lengkap }}">{{ $branch['pkk']->nama_lengkap }}</div>
-                                  <span class="badge neutral">PKK</span>
-                                </div>
-                                <div class="tree-v2-meta">{{ $branch['pkk']->username }} - {{ $branch['akk']->count() }} AKK</div>
+                              <article
+                                class="tree-v2-node tree-v2-empty-node is-actionable"
+                                data-tree-v2-node-action="empty-campus"
+                                data-node-name="Belum ada anggota"
+                                data-node-meta="{{ $group['name'] }}"
+                                data-campus-id="{{ $groupCampusId ?: '' }}"
+                                data-campus-name="{{ $group['name'] }}"
+                                data-search-name="{{ $group['name'] }} belum ada anggota"
+                                tabindex="0"
+                                role="button"
+                                aria-label="Tambah anggota untuk {{ $group['name'] }}"
+                              >
+                                <div class="tree-v2-name">Belum ada anggota</div>
+                                <div class="tree-v2-meta">Klik kampus untuk tambah anggota</div>
                               </article>
-
-                              @if ($branch['akk']->isNotEmpty())
-                                <ul class="tree-v2-children tree-v2-level-members">
-                                  @foreach ($branch['akk'] as $row)
-                                    <li class="tree-v2-item">
-                                      <article class="tree-v2-node tree-v2-person is-akk" data-search-name="{{ $row->nama_lengkap }}" tabindex="0" aria-label="{{ $row->nama_lengkap }}">
-                                        <div class="tree-v2-node-head">
-                                          <div class="tree-v2-name" title="{{ $row->nama_lengkap }}">{{ $row->nama_lengkap }}</div>
-                                          <span class="badge">AKK</span>
-                                        </div>
-                                        <div class="tree-v2-meta">{{ $row->username }}{{ $row->angkatan ? ' - '.$row->angkatan : '' }}</div>
-                                      </article>
-                                    </li>
-                                  @endforeach
-                                </ul>
-                              @endif
                             </li>
+                          @endif
+
+                          @foreach ($group['branches'] as $node)
+                            @include('dashboard.partials.tree-person-node', [
+                              'node' => $node,
+                              'campusId' => $groupCampusId,
+                              'campusName' => $group['name'],
+                            ])
                           @endforeach
 
                           @if ($group['unassigned_akk']->isNotEmpty())
                             <li class="tree-v2-item">
-                              <article class="tree-v2-node tree-v2-group" data-search-name="AKK tanpa PKK {{ $group['name'] }}" tabindex="0" aria-label="AKK tanpa PKK {{ $group['name'] }}">
+                              <article
+                                class="tree-v2-node tree-v2-group is-actionable"
+                                data-tree-v2-node-action="unassigned-akk"
+                                data-node-name="AKK tanpa PKK"
+                                data-node-meta="{{ $group['unassigned_akk']->count() }} AKK - {{ $group['name'] }}"
+                                data-campus-id="{{ $groupCampusId ?: '' }}"
+                                data-campus-name="{{ $group['name'] }}"
+                                data-search-name="AKK tanpa PKK {{ $group['name'] }}"
+                                tabindex="0"
+                                role="button"
+                                aria-label="Aksi untuk AKK tanpa PKK {{ $group['name'] }}"
+                              >
                                 <div class="tree-v2-node-head">
                                   <div class="tree-v2-name">AKK tanpa PKK</div>
                                   <span class="badge">{{ $group['unassigned_akk']->count() }}</span>
@@ -1451,7 +1529,19 @@
                               <ul class="tree-v2-children tree-v2-level-members">
                                 @foreach ($group['unassigned_akk'] as $row)
                                   <li class="tree-v2-item">
-                                    <article class="tree-v2-node tree-v2-person is-akk" data-search-name="{{ $row->nama_lengkap }}" tabindex="0" aria-label="{{ $row->nama_lengkap }}">
+                                    <article
+                                      class="tree-v2-node tree-v2-person is-akk is-actionable"
+                                      data-tree-v2-node-action="akk"
+                                      data-node-name="{{ $row->nama_lengkap }}"
+                                      data-node-meta="{{ $row->username }}{{ $row->angkatan ? ' - '.$row->angkatan : '' }}"
+                                      data-campus-id="{{ $row->kampus_id ?: $groupCampusId ?: '' }}"
+                                      data-campus-name="{{ $row->kampus?->nama_kampus ?: $group['name'] }}"
+                                      data-person-id="{{ $row->user_id }}"
+                                      data-search-name="{{ $row->nama_lengkap }}"
+                                      tabindex="0"
+                                      role="button"
+                                      aria-label="Aksi untuk {{ $row->nama_lengkap }}"
+                                    >
                                       <div class="tree-v2-node-head">
                                         <div class="tree-v2-name" title="{{ $row->nama_lengkap }}">{{ $row->nama_lengkap }}</div>
                                         <span class="badge">AKK</span>
@@ -1472,6 +1562,117 @@
             </div>
           @endif
         </section>
+
+        <div class="modal" id="tree-node-action-modal" data-tree-v2-action-modal hidden>
+          <div class="modal-panel is-small" role="dialog" aria-modal="true" aria-labelledby="tree-node-action-title">
+            <div class="modal-head">
+              <div>
+                <span class="eyebrow" data-tree-v2-action-type>Node</span>
+                <h2 id="tree-node-action-title" data-tree-v2-action-title>Aksi Pohon</h2>
+              </div>
+              <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+            </div>
+            <div class="modal-body">
+              <div class="tree-action-buttons">
+                @if ($canManageData)
+                  <button class="btn is-compact" type="button" data-tree-v2-action-do="add_group" hidden>Tambah Kelompok</button>
+                  <button class="btn is-compact" type="button" data-tree-v2-action-do="add_member" hidden>Tambah Anggota</button>
+                @endif
+                <button class="btn is-compact" type="button" data-tree-v2-action-do="view_detail">Lihat Detail</button>
+              </div>
+              <div class="tree-action-detail" data-tree-v2-action-detail hidden></div>
+            </div>
+          </div>
+        </div>
+
+        @if ($canManageData)
+          <div class="modal" id="tree-group-create-modal" data-tree-group-create-modal hidden>
+            <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="tree-group-create-title">
+              <div class="modal-head">
+                <div>
+                  <span class="eyebrow">Tambah Kelompok</span>
+                  <h2 id="tree-group-create-title">Kelompok Baru</h2>
+                </div>
+                <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+              </div>
+              <div class="modal-body">
+                <p class="muted" data-tree-group-context>{{ old('_tree_node_title', 'Pilih AKK/PKK di pohon untuk mengisi pemimpin kelompok.') }}</p>
+                <form method="POST" action="{{ route('dashboard.pohon.kelompok.store') }}" class="compact-edit-form">
+                  @csrf
+                  <input type="hidden" name="_modal_id" value="tree-group-create-modal">
+                  <input type="hidden" name="_tree_node_title" value="{{ old('_tree_node_title') }}" data-tree-group-context-input>
+                  <input type="hidden" name="pemimpin_id" value="{{ old('pemimpin_id') }}" data-tree-group-leader-input>
+                  <div class="form-grid">
+                    <div class="field is-full">
+                      <label for="tree-group-name">Nama Kelompok</label>
+                      <input id="tree-group-name" type="text" name="nama_kelompok" value="{{ old('nama_kelompok') }}" maxlength="256" placeholder="Kosongkan untuk memakai nama pemimpin">
+                    </div>
+                    <label class="checkbox-field">
+                      <input type="hidden" name="is_active" value="0">
+                      <input type="checkbox" name="is_active" value="1" {{ old('is_active', '1') ? 'checked' : '' }}>
+                      Aktif
+                    </label>
+                  </div>
+                  <div class="form-actions">
+                    <button class="btn is-compact" type="submit">Simpan Kelompok</button>
+                    <button class="btn is-compact" type="button" data-modal-close>Batal</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal" id="tree-member-create-modal" data-tree-member-create-modal hidden>
+            <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="tree-member-create-title">
+              <div class="modal-head">
+                <div>
+                  <span class="eyebrow">Tambah Anggota</span>
+                  <h2 id="tree-member-create-title">Anggota Baru</h2>
+                </div>
+                <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+              </div>
+              <div class="modal-body">
+                <p class="muted" data-tree-member-context>{{ old('_tree_node_title', 'Pilih kelompok di pohon untuk mengisi konteks anggota.') }}</p>
+                <form method="POST" action="{{ route('dashboard.pohon.anggota.store') }}" class="compact-edit-form">
+                  @csrf
+                  <input type="hidden" name="_modal_id" value="tree-member-create-modal">
+                  <input type="hidden" name="_tree_node_title" value="{{ old('_tree_node_title') }}" data-tree-member-context-input>
+                  <input type="hidden" name="kelompok_id" value="{{ old('kelompok_id') }}" data-tree-member-group-input>
+                  <div class="form-grid">
+                    <div class="field">
+                      <label for="tree-member-campus">Kampus</label>
+                      <select id="tree-member-campus" name="kampus_id" data-tree-member-campus-select>
+                        <option value="">Tanpa kampus</option>
+                        @foreach ($campusOptions as $option)
+                          <option value="{{ $option->kampus_id }}" {{ (string) old('kampus_id') === (string) $option->kampus_id ? 'selected' : '' }}>
+                            {{ $option->nama_kampus }}{{ $option->singkatan ? ' ('.$option->singkatan.')' : '' }}
+                          </option>
+                        @endforeach
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="tree-member-angkatan">Angkatan</label>
+                      <input id="tree-member-angkatan" type="number" name="angkatan" value="{{ old('angkatan') }}" min="1900" max="{{ date('Y') + 1 }}">
+                    </div>
+                    <div class="field is-full">
+                      <label for="tree-member-name">Nama Anggota</label>
+                      <input id="tree-member-name" type="text" name="nama_lengkap" value="{{ old('nama_lengkap') }}" maxlength="256" required>
+                    </div>
+                    <label class="checkbox-field">
+                      <input type="hidden" name="is_active" value="0">
+                      <input type="checkbox" name="is_active" value="1" {{ old('is_active', '1') ? 'checked' : '' }}>
+                      Aktif
+                    </label>
+                  </div>
+                  <div class="form-actions">
+                    <button class="btn is-compact" type="submit">Simpan Anggota</button>
+                    <button class="btn is-compact" type="button" data-modal-close>Batal</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        @endif
       @endif
     </main>
   </div>
@@ -1536,6 +1737,217 @@
     @if ($errors->any() && old('_modal_id'))
       openModal(document.getElementById(@json(old('_modal_id'))));
     @endif
+
+    var activeTreeNodeData = null;
+    var treeActionModal = document.querySelector('[data-tree-v2-action-modal]');
+    var treeActionTitle = treeActionModal ? treeActionModal.querySelector('[data-tree-v2-action-title]') : null;
+    var treeActionType = treeActionModal ? treeActionModal.querySelector('[data-tree-v2-action-type]') : null;
+    var treeActionDetail = treeActionModal ? treeActionModal.querySelector('[data-tree-v2-action-detail]') : null;
+    var treeActionButtons = treeActionModal ? treeActionModal.querySelectorAll('[data-tree-v2-action-do]') : [];
+    var treeGroupModal = document.querySelector('[data-tree-group-create-modal]');
+    var treeGroupContext = treeGroupModal ? treeGroupModal.querySelector('[data-tree-group-context]') : null;
+    var treeGroupContextInput = treeGroupModal ? treeGroupModal.querySelector('[data-tree-group-context-input]') : null;
+    var treeGroupLeaderInput = treeGroupModal ? treeGroupModal.querySelector('[data-tree-group-leader-input]') : null;
+    var treeMemberModal = document.querySelector('[data-tree-member-create-modal]');
+    var treeMemberContext = treeMemberModal ? treeMemberModal.querySelector('[data-tree-member-context]') : null;
+    var treeMemberContextInput = treeMemberModal ? treeMemberModal.querySelector('[data-tree-member-context-input]') : null;
+    var treeMemberGroupInput = treeMemberModal ? treeMemberModal.querySelector('[data-tree-member-group-input]') : null;
+    var treeMemberCampusSelect = treeMemberModal ? treeMemberModal.querySelector('[data-tree-member-campus-select]') : null;
+
+    function treeNodeLabel(type) {
+      var labels = {
+        campus: 'Kampus',
+        'empty-campus': 'Kampus',
+        person: 'PKK',
+        group: 'Kelompok',
+        'legacy-group': 'Kelompok',
+        akk: 'AKK',
+        'unassigned-akk': 'Anggota tanpa PKK'
+      };
+
+      return labels[type] || 'Node';
+    }
+
+    function getTreeNodeData(node) {
+      var data = node.dataset || {};
+
+      return {
+        type: data.treeV2NodeAction || '',
+        name: data.nodeName || data.searchName || 'Node',
+        meta: data.nodeMeta || '',
+        campusId: data.campusId || '',
+        campusName: data.campusName || '',
+        personId: data.personId || '',
+        groupId: data.groupId || '',
+        leaderId: data.leaderId || '',
+        leaderName: data.leaderName || ''
+      };
+    }
+
+    function setTreeActionVisibility(action, visible) {
+      Array.prototype.forEach.call(treeActionButtons, function (button) {
+        if (button.getAttribute('data-tree-v2-action-do') === action) {
+          button.hidden = !visible;
+        }
+      });
+    }
+
+    function renderTreeActionDetail(data) {
+      if (!treeActionDetail) return;
+
+      treeActionDetail.innerHTML = '';
+
+      var title = document.createElement('strong');
+      title.textContent = data.name || 'Node';
+      treeActionDetail.appendChild(title);
+
+      var typeLine = document.createElement('div');
+      typeLine.textContent = 'Tipe: ' + treeNodeLabel(data.type);
+      treeActionDetail.appendChild(typeLine);
+
+      if (data.meta) {
+        var metaLine = document.createElement('div');
+        metaLine.textContent = data.meta;
+        treeActionDetail.appendChild(metaLine);
+      }
+
+      var campusLine = document.createElement('div');
+      campusLine.textContent = 'Kampus: ' + (data.campusName || 'Tanpa kampus');
+      treeActionDetail.appendChild(campusLine);
+
+      if (data.personId) {
+        var idLine = document.createElement('div');
+        idLine.textContent = 'ID pengguna: ' + data.personId;
+        treeActionDetail.appendChild(idLine);
+      }
+
+      if (data.leaderName) {
+        var leaderLine = document.createElement('div');
+        leaderLine.textContent = 'Pemimpin: ' + data.leaderName;
+        treeActionDetail.appendChild(leaderLine);
+      }
+
+      if (data.groupId) {
+        var groupLine = document.createElement('div');
+        groupLine.textContent = 'ID kelompok: ' + data.groupId;
+        treeActionDetail.appendChild(groupLine);
+      }
+    }
+
+    function openTreeActionModal(node) {
+      if (!treeActionModal || !node) return;
+
+      activeTreeNodeData = getTreeNodeData(node);
+
+      if (treeActionTitle) {
+        treeActionTitle.textContent = activeTreeNodeData.name;
+      }
+
+      if (treeActionType) {
+        treeActionType.textContent = treeNodeLabel(activeTreeNodeData.type);
+      }
+
+      if (treeActionDetail) {
+        treeActionDetail.hidden = true;
+        renderTreeActionDetail(activeTreeNodeData);
+      }
+
+      var canAddGroup = (activeTreeNodeData.type === 'person' || activeTreeNodeData.type === 'akk') && Boolean(activeTreeNodeData.personId);
+      var canAddMember = activeTreeNodeData.type === 'campus'
+        || activeTreeNodeData.type === 'empty-campus'
+        || (activeTreeNodeData.type === 'group' && Boolean(activeTreeNodeData.groupId));
+
+      setTreeActionVisibility('add_group', canAddGroup);
+      setTreeActionVisibility('add_member', canAddMember);
+      setTreeActionVisibility('view_detail', true);
+
+      openModal(treeActionModal, node);
+    }
+
+    function openTreeGroupModal() {
+      if (!treeGroupModal || !activeTreeNodeData) return;
+
+      var campusName = activeTreeNodeData.campusName || 'Tanpa kampus';
+      var contextText = 'Pemimpin: ' + activeTreeNodeData.name + ' / ' + campusName;
+
+      if (treeGroupContext) {
+        treeGroupContext.textContent = contextText;
+      }
+
+      if (treeGroupContextInput) {
+        treeGroupContextInput.value = contextText;
+      }
+
+      if (treeGroupLeaderInput) {
+        treeGroupLeaderInput.value = activeTreeNodeData.personId || '';
+      }
+
+      closeModal(treeActionModal);
+      openModal(treeGroupModal);
+    }
+
+    function openTreeMemberModal() {
+      if (!treeMemberModal || !activeTreeNodeData) return;
+
+      var campusId = activeTreeNodeData.campusId || '';
+      var campusName = activeTreeNodeData.campusName || 'Tanpa kampus';
+      var leaderName = activeTreeNodeData.leaderName || 'Tanpa pemimpin';
+      var contextText = activeTreeNodeData.groupId
+        ? 'Kelompok: ' + activeTreeNodeData.name + ' / Pemimpin: ' + leaderName + ' / ' + campusName
+        : 'Kampus: ' + campusName;
+
+      if (treeMemberContext) {
+        treeMemberContext.textContent = contextText;
+      }
+
+      if (treeMemberContextInput) {
+        treeMemberContextInput.value = contextText;
+      }
+
+      if (treeMemberGroupInput) {
+        treeMemberGroupInput.value = activeTreeNodeData.groupId || '';
+      }
+
+      if (treeMemberCampusSelect) {
+        treeMemberCampusSelect.value = campusId;
+      }
+
+      closeModal(treeActionModal);
+      openModal(treeMemberModal);
+    }
+
+    document.querySelectorAll('[data-tree-v2-node-action]').forEach(function (node) {
+      node.addEventListener('click', function (event) {
+        event.preventDefault();
+        openTreeActionModal(node);
+      });
+
+      node.addEventListener('keydown', function (event) {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        openTreeActionModal(node);
+      });
+    });
+
+    document.querySelectorAll('[data-tree-v2-action-do]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        var action = button.getAttribute('data-tree-v2-action-do');
+
+        if (action === 'add_group') {
+          openTreeGroupModal();
+          return;
+        }
+
+        if (action === 'add_member') {
+          openTreeMemberModal();
+          return;
+        }
+
+        if (action === 'view_detail' && treeActionDetail) {
+          treeActionDetail.hidden = !treeActionDetail.hidden;
+        }
+      });
+    });
 
     document.querySelectorAll('[data-filter-table]').forEach(function (input) {
       input.addEventListener('input', function () {
@@ -1618,7 +2030,7 @@
       var startTop = 0;
 
       treeScrollArea.addEventListener('mousedown', function (event) {
-        if (event.button !== 0 || event.target.closest('button, input, a')) return;
+        if (event.button !== 0 || event.target.closest('button, input, a, [data-tree-v2-node-action]')) return;
         isDragging = true;
         dragStartX = event.clientX;
         dragStartY = event.clientY;

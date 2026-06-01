@@ -51,6 +51,7 @@ class User extends Authenticatable
         'angkatan',
         'role',
         'pkk_id',
+        'kelompok_id',
         'foto_profil',
         'admin_tipe',
         'is_active',
@@ -148,6 +149,16 @@ class User extends Authenticatable
     public function pkkLeader()
     {
         return $this->belongsTo(User::class, 'pkk_id', 'user_id');
+    }
+
+    public function kelompokPemuridan()
+    {
+        return $this->belongsTo(KelompokPemuridan::class, 'kelompok_id', 'kelompok_id');
+    }
+
+    public function kelompokDipimpin()
+    {
+        return $this->hasMany(KelompokPemuridan::class, 'pemimpin_id', 'user_id');
     }
 
     /**
