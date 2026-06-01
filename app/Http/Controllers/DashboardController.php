@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Kampus;
 use App\Models\KelompokPemuridan;
+use App\Models\Regio;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -39,6 +40,11 @@ class DashboardController extends Controller
     public function kampus(): View
     {
         return $this->showAdminSection('kampus');
+    }
+
+    public function regio(): View
+    {
+        return $this->showAdminSection('regio');
     }
 
     public function pengguna(): View
@@ -93,12 +99,14 @@ class DashboardController extends Controller
             'canManageData' => $this->canManageData($user),
             'roleCounts' => $stats['roleCounts'] ?? $this->blankRoleCounts(),
             'campusSummaries' => $canSeeAdminData ? $this->campusSummaries() : collect(),
+            'regioRows' => $canSeeAdminData ? $this->regioRows() : collect(),
             'userRows' => $canSeeAdminData ? $this->userRows() : collect(),
             'memberRows' => $canSeeAdminData ? $this->memberRows() : collect(),
             'campusRoleGroups' => $campusRoleGroups,
             'treeGroups' => $treeGroups,
             'treeSearchNames' => $canSeeAdminData ? $this->treeSearchNames($treeGroups) : collect(),
             'campusOptions' => $canSeeAdminData ? $this->campusOptions() : collect(),
+            'regioOptions' => $canSeeAdminData ? $this->regioOptions() : collect(),
         ];
     }
 
@@ -185,6 +193,7 @@ class DashboardController extends Controller
     private function campusSummaries()
     {
         return Kampus::query()
+            ->with('regio')
             ->withCount([
                 'users as total_users',
                 'users as active_users' => fn ($query) => $query->where('is_active', true),
@@ -193,6 +202,20 @@ class DashboardController extends Controller
             ])
             ->orderByDesc('active_users')
             ->orderBy('nama_kampus')
+            ->get();
+    }
+
+    private function regioRows()
+    {
+        return Regio::query()
+            ->withCount([
+                'users as total_users',
+                'users as active_users' => fn ($query) => $query->where('is_active', true),
+                'users as pkk_users' => fn ($query) => $query->where('role', 'pkk'),
+                'users as akk_users' => fn ($query) => $query->where('role', 'akk'),
+            ])
+            ->orderByDesc('active_users')
+            ->orderBy('nama_regio')
             ->get();
     }
 
@@ -223,11 +246,12 @@ class DashboardController extends Controller
             ->get();
 
         $allGroups = KelompokPemuridan::query()
-            ->with(['kampus', 'pemimpin.kampus'])
+            ->with(['kampus.regio', 'regio', 'pemimpin.kampus'])
             ->orderBy('nama_kelompok')
             ->get();
 
         $campuses = Kampus::query()
+            ->with('regio')
             ->orderBy('nama_kampus')
             ->get()
             ->map(function (Kampus $kampus) use ($allPeople, $allGroups): array {
@@ -287,7 +311,16 @@ class DashboardController extends Controller
     private function campusOptions()
     {
         return Kampus::query()
+            ->with('regio')
             ->orderBy('nama_kampus')
+            ->get();
+    }
+
+    private function regioOptions()
+    {
+        return Regio::query()
+            ->orderByDesc('is_active')
+            ->orderBy('nama_regio')
             ->get();
     }
 
@@ -422,6 +455,11 @@ class DashboardController extends Controller
                 'title' => 'Kampus',
                 'eyebrow' => 'Data Kampus',
                 'subtitle' => 'Daftar kampus dan ringkasan pengguna Sistem KTB per kampus.',
+            ]),
+            'regio' => array_merge($config, [
+                'title' => 'Regio',
+                'eyebrow' => 'Data Regio',
+                'subtitle' => 'Daftar wilayah pelayanan dan ringkasan anggota Sistem KTB per regio.',
             ]),
             'pengguna' => array_merge($config, [
                 'title' => 'Pengguna',

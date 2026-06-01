@@ -87,16 +87,16 @@ class DummyPemuridanSeeder extends Seeder
             }
 
             foreach ($roles['pkk'] as $row) {
-                $this->upsertUser($row, 'pkk', $kampus->kampus_id, $password, $now);
+                $this->upsertUser($row, 'pkk', $kampus, $password, $now);
             }
 
             foreach ($roles['akk'] as $row) {
-                $this->upsertUser($row, 'akk', $kampus->kampus_id, $password, $now);
+                $this->upsertUser($row, 'akk', $kampus, $password, $now);
             }
         }
     }
 
-    private function upsertUser(array $row, string $role, int $kampusId, string $password, Carbon $now): void
+    private function upsertUser(array $row, string $role, Kampus $kampus, string $password, Carbon $now): void
     {
         DB::table('users')->updateOrInsert(
             ['username' => $row['username']],
@@ -104,7 +104,8 @@ class DummyPemuridanSeeder extends Seeder
                 'password' => $password,
                 'nama_lengkap' => $row['nama_lengkap'],
                 'tanggal_lahir' => null,
-                'kampus_id' => $kampusId,
+                'kampus_id' => $kampus->kampus_id,
+                'regio_id' => $kampus->regio_id,
                 'angkatan' => $row['angkatan'],
                 'role' => $role,
                 'foto_profil' => null,

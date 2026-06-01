@@ -9,7 +9,7 @@ class RegioSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::table('regios')->insertOrIgnore([
+        $rows = [
             [
                 'nama_regio'  => 'Surabaya',
                 'keterangan'  => 'Wilayah pelayanan PMK Kota Surabaya',
@@ -24,6 +24,13 @@ class RegioSeeder extends Seeder
                 'created_at'  => now(),
                 'updated_at'  => now(),
             ],
-        ]);
+        ];
+
+        foreach ($rows as $row) {
+            DB::table('regios')->updateOrInsert(
+                ['nama_regio' => $row['nama_regio']],
+                $row
+            );
+        }
     }
 }

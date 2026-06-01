@@ -1450,6 +1450,7 @@
         <a class="{{ $activePage === 'dashboard' ? 'active' : '' }}" href="{{ route($dashboard['route']) }}">Dashboard</a>
         @if ($canSeeAdminData)
           <a class="{{ $activePage === 'kampus' ? 'active' : '' }}" href="{{ route('dashboard.kampus') }}">Kampus</a>
+          <a class="{{ $activePage === 'regio' ? 'active' : '' }}" href="{{ route('dashboard.regio') }}">Regio</a>
           <a class="{{ $activePage === 'pengguna' ? 'active' : '' }}" href="{{ route('dashboard.pengguna') }}">Pengguna</a>
           <a class="{{ $activePage === 'anggota-ktb' ? 'active' : '' }}" href="{{ route('dashboard.anggota-ktb') }}">Anggota KTB</a>
           <a class="{{ $activePage === 'pohon' ? 'active' : '' }}" href="{{ route('dashboard.pohon') }}">Pohon</a>
@@ -1617,6 +1618,7 @@
                 <thead>
                   <tr>
                     <th>Kampus</th>
+                    <th>Regio</th>
                     <th>Status</th>
                     <th>Total User</th>
                     <th>Aktif</th>
@@ -1634,6 +1636,7 @@
                         <strong>{{ $kampus->nama_kampus }}</strong>
                         <div class="muted">{{ $kampus->singkatan ?: '-' }}</div>
                       </td>
+                      <td>{{ $kampus->regio?->nama_regio ?: '-' }}</td>
                       <td>
                         <span class="badge {{ $kampus->is_active ? '' : 'warning' }}">
                           {{ $kampus->is_active ? 'Aktif' : 'Nonaktif' }}
@@ -1696,6 +1699,98 @@
             </div>
           @endif
         </section>
+      @elseif ($activePage === 'regio' && $canSeeAdminData)
+        <section class="panel" id="daftar-regio">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">Wilayah</span>
+              <h2>Daftar Regio</h2>
+            </div>
+            <div class="row-actions">
+              <input class="search" type="search" placeholder="Cari regio..." data-filter-table="regio-table" aria-label="Cari regio">
+              @if ($canManageData)
+                <button class="btn is-compact" type="button" data-modal-open="modal-regio-create">Tambah Regio</button>
+              @endif
+            </div>
+          </div>
+
+          @if ($canManageData)
+            <div class="modal" id="modal-regio-create" hidden>
+              <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-regio-create-title">
+                <div class="modal-head">
+                  <div>
+                    <span class="eyebrow">Tambah</span>
+                    <h2 id="modal-regio-create-title">Regio</h2>
+                  </div>
+                  <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+                </div>
+                <div class="modal-body">
+                  @include('dashboard.partials.regio-form')
+                </div>
+              </div>
+            </div>
+          @endif
+
+          @if ($regioRows->isEmpty())
+            <div class="empty-state">Belum ada data regio.</div>
+          @else
+            <div class="table-wrap">
+              <table class="table" id="regio-table">
+                <thead>
+                  <tr>
+                    <th>Regio</th>
+                    <th>Keterangan</th>
+                    <th>Status</th>
+                    <th>Total User</th>
+                    <th>Aktif</th>
+                    <th>PKK</th>
+                    <th>AKK</th>
+                    @if ($canManageData)
+                      <th>Aksi</th>
+                    @endif
+                  </tr>
+                </thead>
+                <tbody>
+                  @foreach ($regioRows as $regio)
+                    <tr>
+                      <td><strong>{{ $regio->nama_regio }}</strong></td>
+                      <td>{{ $regio->keterangan ?: '-' }}</td>
+                      <td>
+                        <span class="badge {{ $regio->is_active ? '' : 'warning' }}">
+                          {{ $regio->is_active ? 'Aktif' : 'Nonaktif' }}
+                        </span>
+                      </td>
+                      <td>{{ number_format($regio->total_users, 0, ',', '.') }}</td>
+                      <td>{{ number_format($regio->active_users, 0, ',', '.') }}</td>
+                      <td>{{ number_format($regio->pkk_users, 0, ',', '.') }}</td>
+                      <td>{{ number_format($regio->akk_users, 0, ',', '.') }}</td>
+                      @if ($canManageData)
+                        <td>
+                          <button class="btn is-compact" type="button" data-modal-open="modal-regio-edit-{{ $regio->regio_id }}">Edit</button>
+
+                          <div class="modal" id="modal-regio-edit-{{ $regio->regio_id }}" hidden>
+                            <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-regio-edit-title-{{ $regio->regio_id }}">
+                              <div class="modal-head">
+                                <div>
+                                  <span class="eyebrow">Edit</span>
+                                  <h2 id="modal-regio-edit-title-{{ $regio->regio_id }}">{{ $regio->nama_regio }}</h2>
+                                </div>
+                                <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+                              </div>
+                              <div class="modal-body">
+                                @include('dashboard.partials.regio-form', ['regio' => $regio])
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      @endif
+                    </tr>
+                  @endforeach
+                </tbody>
+              </table>
+            </div>
+          @endif
+        </section>
       @elseif (in_array($activePage, ['pengguna', 'anggota-ktb'], true) && $canSeeAdminData)
         @php
           $directoryRows = $activePage === 'anggota-ktb' ? $memberRows : $userRows;
@@ -1725,6 +1820,7 @@
                     <th>Nama</th>
                     <th>Username</th>
                     <th>Role</th>
+                    <th>Regio</th>
                     <th>Kampus</th>
                     <th>Angkatan</th>
                     <th>Status</th>
@@ -1739,6 +1835,7 @@
                       </td>
                       <td>{{ $row->username }}</td>
                       <td><span class="badge neutral">{{ $roleNames[$row->role] ?? strtoupper($row->role) }}</span></td>
+                      <td>{{ $row->regio?->nama_regio ?: '-' }}</td>
                       <td>
                         <strong>{{ $row->kampus?->singkatan ?: '-' }}</strong>
                         <div class="muted">{{ $row->kampus?->nama_kampus ?: 'Belum ada kampus' }}</div>
@@ -1976,7 +2073,7 @@
                         <option value="">Tanpa kampus</option>
                         @foreach ($campusOptions as $option)
                           <option value="{{ $option->kampus_id }}" {{ (string) old('kampus_id') === (string) $option->kampus_id ? 'selected' : '' }}>
-                            {{ $option->nama_kampus }}{{ $option->singkatan ? ' ('.$option->singkatan.')' : '' }}
+                            {{ $option->nama_kampus }}{{ $option->singkatan ? ' ('.$option->singkatan.')' : '' }}{{ $option->regio?->nama_regio ? ' - '.$option->regio->nama_regio : '' }}
                           </option>
                         @endforeach
                       </select>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Kampus;
+use App\Models\Regio;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -51,10 +52,12 @@ class KampusController extends Controller
                 'max:256',
                 Rule::unique('kampus', 'nama_kampus')->ignore($kampus?->kampus_id, 'kampus_id'),
             ],
+            'regio_id' => ['nullable', 'integer', Rule::exists('regios', 'regio_id')],
             'singkatan' => ['nullable', 'string', 'max:50'],
             'is_active' => ['nullable', 'boolean'],
         ], [], [
             'nama_kampus' => 'nama kampus',
+            'regio_id' => 'regio',
             'singkatan' => 'singkatan',
             'is_active' => 'status aktif',
         ]);
@@ -64,9 +67,25 @@ class KampusController extends Controller
     {
         return [
             'nama_kampus' => $validated['nama_kampus'],
+            'regio_id' => $this->resolveRegioId($validated['regio_id'] ?? null),
             'singkatan' => blank($validated['singkatan'] ?? null) ? null : $validated['singkatan'],
             'is_active' => $request->boolean('is_active'),
         ];
+    }
+
+    private function resolveRegioId(mixed $regioId = null): int
+    {
+        if (filled($regioId)) {
+            return (int) $regioId;
+        }
+
+        return (int) Regio::query()->firstOrCreate(
+            ['nama_regio' => 'Surabaya'],
+            [
+                'keterangan' => 'Wilayah pelayanan PMK Kota Surabaya',
+                'is_active' => true,
+            ]
+        )->regio_id;
     }
 
     private function authorizeManageData(): void

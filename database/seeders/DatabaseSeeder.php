@@ -8,14 +8,13 @@ class DatabaseSeeder extends Seeder
 {
     /**
      * Seed the application's database.
-     * Urutan penting: Kampus harus di-seed dulu sebelum Users
-     * karena users.kampus_id adalah FK ke kampus.kampus_id
+     * Urutan penting: regio dibuat dulu supaya kampus dan user bisa terhubung.
      */
     public function run(): void
     {
         $this->call([
-            KampusSeeder::class,          // 1. Master kampus
-            RegioSeeder::class,           // 2. Master regio (Surabaya, Malang)
+            RegioSeeder::class,           // 1. Master regio (Surabaya, Malang)
+            KampusSeeder::class,          // 2. Master kampus
             KategoriJurusanSeeder::class, // 3. Master 10 kategori jurusan
             SuperAdminSeeder::class,      // 4. Akun Super Admin
         ]);

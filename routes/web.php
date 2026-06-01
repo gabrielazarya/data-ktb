@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KampusController;
+use App\Http\Controllers\RegioController;
 use App\Http\Controllers\TreeGroupController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +26,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/dashboard/kampus', [KampusController::class, 'store'])->name('dashboard.kampus.store');
     Route::put('/dashboard/kampus/{kampus}', [KampusController::class, 'update'])->name('dashboard.kampus.update');
     Route::delete('/dashboard/kampus/{kampus}', [KampusController::class, 'destroy'])->name('dashboard.kampus.destroy');
+    Route::get('/dashboard/regio', [DashboardController::class, 'regio'])->name('dashboard.regio');
+    Route::post('/dashboard/regio', [RegioController::class, 'store'])->name('dashboard.regio.store');
+    Route::put('/dashboard/regio/{regio}', [RegioController::class, 'update'])->name('dashboard.regio.update');
     Route::get('/dashboard/pengguna', [DashboardController::class, 'pengguna'])->name('dashboard.pengguna');
     Route::get('/dashboard/anggota-ktb', [DashboardController::class, 'anggotaKtb'])->name('dashboard.anggota-ktb');
     Route::get('/dashboard/pohon-pemuridan', [DashboardController::class, 'pohon'])->name('dashboard.pohon');

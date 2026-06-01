@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\KelompokPemuridan;
+use App\Models\Kampus;
+use App\Models\Regio;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,16 +32,20 @@ class TreeGroupController extends Controller
         ]);
 
         $leader = User::query()->findOrFail($validated['pemimpin_id']);
+        $leader->loadMissing('kampus');
+        $regioId = $this->resolveRegioId($leader->regio_id ?: $leader->kampus?->regio_id);
         $groupName = trim((string) ($validated['nama_kelompok'] ?? ''));
 
         $leader->forceFill([
             'role' => 'pkk',
+            'regio_id' => $regioId,
             'admin_tipe' => null,
         ])->save();
 
         KelompokPemuridan::query()->create([
             'nama_kelompok' => $groupName !== '' ? $groupName : 'Kelompok '.$leader->nama_lengkap,
             'kampus_id' => $leader->kampus_id,
+            'regio_id' => $regioId,
             'pemimpin_id' => $leader->user_id,
             'is_active' => $request->boolean('is_active'),
         ]);
@@ -60,14 +66,25 @@ class TreeGroupController extends Controller
         ]);
 
         $group = filled($context['kelompok_id'] ?? null)
-            ? KelompokPemuridan::query()->findOrFail($context['kelompok_id'])
+            ? KelompokPemuridan::query()
+                ->with(['kampus', 'pemimpin'])
+                ->findOrFail($context['kelompok_id'])
             : null;
 
         $payload = $this->validateUserPayload($request, 'nama anggota', validateCampus: $group === null);
+        $campus = $group === null && filled($payload['kampus_id'] ?? null)
+            ? Kampus::query()->find($payload['kampus_id'])
+            : null;
         $payload['role'] = 'akk';
         $payload['pkk_id'] = $group?->pemimpin_id;
         $payload['kelompok_id'] = $group?->kelompok_id;
-        $payload['kampus_id'] = $group ? $group->kampus_id : ($payload['kampus_id'] ?? null);
+        $payload['kampus_id'] = $group ? $group->kampus_id : ($campus?->kampus_id ?? null);
+        $payload['regio_id'] = $this->resolveRegioId(
+            $group?->regio_id
+            ?: $group?->kampus?->regio_id
+            ?: $group?->pemimpin?->regio_id
+            ?: $campus?->regio_id
+        );
         $payload['admin_tipe'] = null;
         $payload['is_active'] = $request->boolean('is_active');
         $payload['username'] = $this->temporaryUsername();
@@ -142,6 +159,21 @@ class TreeGroupController extends Controller
         }
 
         return $username;
+    }
+
+    private function resolveRegioId(mixed $regioId = null): int
+    {
+        if (filled($regioId)) {
+            return (int) $regioId;
+        }
+
+        return (int) Regio::query()->firstOrCreate(
+            ['nama_regio' => 'Surabaya'],
+            [
+                'keterangan' => 'Wilayah pelayanan PMK Kota Surabaya',
+                'is_active' => true,
+            ]
+        )->regio_id;
     }
 
     private function authorizeManageData(): void

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Kampus;
 use App\Models\KelompokPemuridan;
+use App\Models\Regio;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -31,9 +32,12 @@ class CrudPemuridanTest extends TestCase
             ])
             ->assertRedirect();
 
+        $surabaya = Regio::query()->where('nama_regio', 'Surabaya')->firstOrFail();
+
         $this->assertDatabaseHas('kampus', [
             'nama_kampus' => 'Kampus Test',
             'singkatan' => 'KT',
+            'regio_id' => $surabaya->regio_id,
             'is_active' => true,
         ]);
     }
@@ -55,6 +59,55 @@ class CrudPemuridanTest extends TestCase
                 'is_active' => '1',
             ])
             ->assertForbidden();
+    }
+
+    public function test_super_admin_can_create_and_update_regio(): void
+    {
+        $admin = User::query()->create([
+            'username' => 'superadmin_regio_test',
+            'password' => 'password',
+            'nama_lengkap' => 'Super Admin Regio Test',
+            'role' => 'super_admin',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('dashboard.regio.store'), [
+                'nama_regio' => 'Regio Test',
+                'keterangan' => 'Wilayah test',
+                'is_active' => '1',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('regios', [
+            'nama_regio' => 'Regio Test',
+            'keterangan' => 'Wilayah test',
+            'is_active' => true,
+        ]);
+
+        $regio = Regio::query()->where('nama_regio', 'Regio Test')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->put(route('dashboard.regio.update', $regio), [
+                'nama_regio' => 'Regio Test Update',
+                'keterangan' => 'Wilayah update',
+                'is_active' => '0',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('regios', [
+            'regio_id' => $regio->regio_id,
+            'nama_regio' => 'Regio Test Update',
+            'keterangan' => 'Wilayah update',
+            'is_active' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('dashboard.regio'))
+            ->assertOk()
+            ->assertSee('Regio Test Update')
+            ->assertSee('Wilayah update')
+            ->assertSee('Tambah Regio');
     }
 
     public function test_pengguna_and_anggota_ktb_pages_are_separated_by_role(): void
@@ -121,8 +174,10 @@ class CrudPemuridanTest extends TestCase
         $kampus = Kampus::query()->create([
             'nama_kampus' => 'Kampus Kosong',
             'singkatan' => 'KK',
+            'regio_id' => Regio::query()->where('nama_regio', 'Surabaya')->value('regio_id'),
             'is_active' => true,
         ]);
+        $surabaya = Regio::query()->where('nama_regio', 'Surabaya')->firstOrFail();
 
         $this->actingAs($admin)
             ->get(route('dashboard.pohon'))
@@ -146,6 +201,7 @@ class CrudPemuridanTest extends TestCase
             'pkk_id' => null,
             'kelompok_id' => null,
             'kampus_id' => $kampus->kampus_id,
+            'regio_id' => $surabaya->regio_id,
             'angkatan' => 2025,
             'is_active' => true,
         ]);
@@ -177,6 +233,7 @@ class CrudPemuridanTest extends TestCase
             'nama_kelompok' => 'Kelompok Anggota Kampus Tree Test',
             'pemimpin_id' => $pkk->user_id,
             'kampus_id' => $kampus->kampus_id,
+            'regio_id' => $surabaya->regio_id,
             'is_active' => true,
         ]);
 
@@ -208,6 +265,7 @@ class CrudPemuridanTest extends TestCase
             'pkk_id' => $pkk->user_id,
             'kelompok_id' => $group->kelompok_id,
             'kampus_id' => $kampus->kampus_id,
+            'regio_id' => $surabaya->regio_id,
             'angkatan' => 2026,
             'is_active' => true,
         ]);

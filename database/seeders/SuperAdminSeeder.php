@@ -21,6 +21,7 @@ class SuperAdminSeeder extends Seeder
             'nama_lengkap'  => 'Super Administrator',
             'tanggal_lahir' => null,
             'kampus_id'     => null,
+            'regio_id'      => null,
             'angkatan'      => null,
             'role'          => 'super_admin',
             'foto_profil'   => null,

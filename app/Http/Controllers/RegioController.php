@@ -1,0 +1,73 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Regio;
+use App\Models\User;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
+
+class RegioController extends Controller
+{
+    public function store(Request $request): RedirectResponse
+    {
+        $this->authorizeManageData();
+
+        $validated = $this->validateRegio($request);
+
+        Regio::query()->create($this->payload($request, $validated));
+
+        return back()->with('success', 'Data regio berhasil ditambahkan.');
+    }
+
+    public function update(Request $request, Regio $regio): RedirectResponse
+    {
+        $this->authorizeManageData();
+
+        $validated = $this->validateRegio($request, $regio);
+
+        $regio->update($this->payload($request, $validated));
+
+        return back()->with('success', 'Data regio berhasil diperbarui.');
+    }
+
+    private function validateRegio(Request $request, ?Regio $regio = null): array
+    {
+        return $request->validate([
+            'nama_regio' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('regios', 'nama_regio')->ignore($regio?->regio_id, 'regio_id'),
+            ],
+            'keterangan' => ['nullable', 'string', 'max:255'],
+            'is_active' => ['nullable', 'boolean'],
+        ], [], [
+            'nama_regio' => 'nama regio',
+            'keterangan' => 'keterangan',
+            'is_active' => 'status aktif',
+        ]);
+    }
+
+    private function payload(Request $request, array $validated): array
+    {
+        return [
+            'nama_regio' => $validated['nama_regio'],
+            'keterangan' => blank($validated['keterangan'] ?? null) ? null : $validated['keterangan'],
+            'is_active' => $request->boolean('is_active'),
+        ];
+    }
+
+    private function authorizeManageData(): void
+    {
+        /** @var User|null $user */
+        $user = Auth::user();
+
+        abort_unless(
+            $user && ($user->isSuperAdmin() || $user->isAdminEditor()),
+            403
+        );
+    }
+}

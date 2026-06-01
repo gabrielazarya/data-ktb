@@ -15,6 +15,7 @@ class KelompokPemuridan extends Model
     protected $fillable = [
         'nama_kelompok',
         'kampus_id',
+        'regio_id',
         'pemimpin_id',
         'is_active',
     ];
@@ -34,6 +35,11 @@ class KelompokPemuridan extends Model
     public function pemimpin()
     {
         return $this->belongsTo(User::class, 'pemimpin_id', 'user_id');
+    }
+
+    public function regio()
+    {
+        return $this->belongsTo(Regio::class, 'regio_id', 'regio_id');
     }
 
     public function anggota()
