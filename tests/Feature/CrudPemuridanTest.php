@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Kampus;
+use App\Models\KategoriJurusan;
 use App\Models\KelompokPemuridan;
 use App\Models\Regio;
 use App\Models\User;
@@ -193,6 +194,12 @@ class CrudPemuridanTest extends TestCase
             'regio_id' => $surabaya->regio_id,
             'is_active' => true,
         ]);
+        $kampusSurabayaOther = Kampus::query()->create([
+            'nama_kampus' => 'Kampus Surabaya Scope Lain',
+            'singkatan' => 'KSSL',
+            'regio_id' => $surabaya->regio_id,
+            'is_active' => true,
+        ]);
         $kampusMalang = Kampus::query()->create([
             'nama_kampus' => 'Kampus Malang Scope',
             'singkatan' => 'KMS',
@@ -205,6 +212,15 @@ class CrudPemuridanTest extends TestCase
             'nama_lengkap' => 'AKK Scope Surabaya',
             'role' => 'akk',
             'kampus_id' => $kampusSurabaya->kampus_id,
+            'regio_id' => $surabaya->regio_id,
+            'is_active' => true,
+        ]);
+        User::query()->create([
+            'username' => 'akk_scope_surabaya_lain',
+            'password' => 'password',
+            'nama_lengkap' => 'AKK Scope Surabaya Lain',
+            'role' => 'akk',
+            'kampus_id' => $kampusSurabayaOther->kampus_id,
             'regio_id' => $surabaya->regio_id,
             'is_active' => true,
         ]);
@@ -237,6 +253,9 @@ class CrudPemuridanTest extends TestCase
             ->assertSee('Detail Kampus')
             ->assertSee('Kampus Surabaya Scope')
             ->assertSee('AKK Scope Surabaya')
+            ->assertSee('Grafik pohon pemuridan')
+            ->assertDontSee('Direktori Kampus')
+            ->assertDontSee('AKK Scope Surabaya Lain')
             ->assertDontSee('AKK Scope Malang');
 
         $this->actingAs($admin)
@@ -363,11 +382,23 @@ class CrudPemuridanTest extends TestCase
             'is_active' => true,
         ]);
 
+        User::query()->create([
+            'username' => 'admin_regio_count_test',
+            'password' => 'password',
+            'nama_lengkap' => 'Admin Regio Count Test',
+            'role' => 'admin',
+            'admin_tipe' => 'editor',
+            'regio_id' => $regio->regio_id,
+            'is_active' => true,
+        ]);
+
         $this->actingAs($admin)
             ->get(route('dashboard.regio'))
             ->assertOk()
             ->assertSee('Regio Test Update')
             ->assertSee('Wilayah update')
+            ->assertSee('<th>Admin</th>', false)
+            ->assertDontSee('<th>Aktif</th>', false)
             ->assertSee('Tambah Regio');
     }
 
@@ -391,12 +422,19 @@ class CrudPemuridanTest extends TestCase
             'regio_id' => $surabaya->regio_id,
             'is_active' => true,
         ]);
+        $kampus = Kampus::query()->create([
+            'nama_kampus' => 'Kampus Direktori Test',
+            'singkatan' => 'KDT',
+            'regio_id' => $surabaya->regio_id,
+            'is_active' => true,
+        ]);
 
         User::query()->create([
             'username' => 'pkk_direktori_test',
             'password' => 'password',
             'nama_lengkap' => 'PKK Direktori Test',
             'role' => 'pkk',
+            'kampus_id' => $kampus->kampus_id,
             'regio_id' => $surabaya->regio_id,
             'is_active' => true,
         ]);
@@ -417,6 +455,9 @@ class CrudPemuridanTest extends TestCase
             ->assertDontSee('superadmin_direktori_test')
             ->assertSee('PKK Direktori Test')
             ->assertSee('AKK Direktori Test')
+            ->assertSee('KDT')
+            ->assertDontSee('Dibuat')
+            ->assertDontSee('<th>Kampus</th>', false)
             ->assertSee('<option value="admin" selected>Admin</option>', false)
             ->assertSee('<option value="">Semua</option>', false);
 
@@ -512,6 +553,22 @@ class CrudPemuridanTest extends TestCase
             'regio_id' => $surabaya->regio_id,
             'is_active' => true,
         ]);
+        $pkk = User::query()->create([
+            'username' => 'pkk_switch_test',
+            'password' => 'password',
+            'nama_lengkap' => 'PKK Switch Test',
+            'role' => 'pkk',
+            'regio_id' => $surabaya->regio_id,
+            'is_active' => true,
+        ]);
+        $akk = User::query()->create([
+            'username' => 'akk_switch_test',
+            'password' => 'password',
+            'nama_lengkap' => 'AKK Switch Test',
+            'role' => 'akk',
+            'regio_id' => $surabaya->regio_id,
+            'is_active' => true,
+        ]);
 
         $this->actingAs($superAdmin)
             ->get(route('dashboard.pengguna'))
@@ -536,6 +593,109 @@ class CrudPemuridanTest extends TestCase
             ->assertSessionMissing('impersonator_super_admin_id');
 
         $this->assertAuthenticatedAs($superAdmin);
+
+        $this->actingAs($superAdmin)
+            ->post(route('dashboard.pengguna.switch-access', $pkk))
+            ->assertRedirect(route('pkk.dashboard'))
+            ->assertSessionHas('impersonator_super_admin_id', $superAdmin->user_id);
+
+        $this->assertAuthenticatedAs($pkk);
+
+        $this->post(route('dashboard.access.return'))
+            ->assertRedirect(route('superadmin.dashboard'))
+            ->assertSessionMissing('impersonator_super_admin_id');
+
+        $this->assertAuthenticatedAs($superAdmin);
+
+        $this->actingAs($superAdmin)
+            ->post(route('dashboard.pengguna.switch-access', $akk))
+            ->assertRedirect(route('akk.dashboard'))
+            ->assertSessionHas('impersonator_super_admin_id', $superAdmin->user_id);
+
+        $this->assertAuthenticatedAs($akk);
+    }
+
+    public function test_authenticated_user_can_view_update_profile_and_change_password(): void
+    {
+        $superAdmin = User::query()->create([
+            'username' => 'superadmin_profile_test',
+            'password' => 'password',
+            'nama_lengkap' => 'Super Admin Profile Test',
+            'role' => 'super_admin',
+            'is_active' => true,
+        ]);
+        $kategori = KategoriJurusan::query()->create([
+            'nama_kategori' => 'Kategori Profil Test',
+            'keterangan' => 'Kategori untuk test profil',
+        ]);
+        $user = User::query()->create([
+            'username' => 'profile_test_user',
+            'password' => 'password',
+            'nama_lengkap' => 'Profile Test User',
+            'role' => 'akk',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($superAdmin)
+            ->get(route('dashboard.profile'))
+            ->assertOk()
+            ->assertSee('Detail Akun')
+            ->assertDontSee('<span class="detail-label">Kampus</span>', false)
+            ->assertDontSee('<span class="detail-label">Tanggal Lahir</span>', false)
+            ->assertDontSee('<span class="detail-label">Jurusan</span>', false)
+            ->assertDontSee('<span class="detail-label">Kategori Jurusan</span>', false)
+            ->assertDontSee('<span class="detail-label">Angkatan</span>', false)
+            ->assertDontSee('<span class="detail-label">PKK</span>', false)
+            ->assertDontSee('<span class="detail-label">Kelompok KTB</span>', false)
+            ->assertDontSee('id="profile-birth-date"', false)
+            ->assertDontSee('id="profile-year"', false)
+            ->assertDontSee('id="profile-major"', false)
+            ->assertDontSee('id="profile-major-category"', false);
+
+        $this->actingAs($user)
+            ->get(route('dashboard.profile'))
+            ->assertOk()
+            ->assertSee('Detail Akun')
+            ->assertSee('Data Profil')
+            ->assertSee('Ubah Password');
+
+        $this->actingAs($user)
+            ->put(route('dashboard.profile.update'), [
+                'nama_lengkap' => 'Profile Test Updated',
+                'tanggal_lahir' => '2001-02-03',
+                'jurusan' => 'Informatika',
+                'kategori_jurusan_id' => $kategori->kategori_jurusan_id,
+                'angkatan' => 2020,
+                'foto_profil' => 'images/profile-test.png',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $user->refresh();
+        $this->assertSame('Profile Test Updated', $user->nama_lengkap);
+        $this->assertSame('Informatika', $user->jurusan);
+        $this->assertSame($kategori->kategori_jurusan_id, $user->kategori_jurusan_id);
+        $this->assertSame(2020, $user->angkatan);
+        $this->assertSame('images/profile-test.png', $user->foto_profil);
+
+        $this->actingAs($user)
+            ->put(route('dashboard.profile.password'), [
+                'current_password' => 'salah',
+                'password' => 'passwordbaru',
+                'password_confirmation' => 'passwordbaru',
+            ])
+            ->assertSessionHasErrors('current_password');
+
+        $this->actingAs($user)
+            ->put(route('dashboard.profile.password'), [
+                'current_password' => 'password',
+                'password' => 'passwordbaru',
+                'password_confirmation' => 'passwordbaru',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertTrue(Hash::check('passwordbaru', $user->refresh()->password));
     }
 
     public function test_pohon_displays_empty_campus_and_admin_editor_can_manage_tree_flow(): void

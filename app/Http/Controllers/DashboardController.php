@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Kampus;
+use App\Models\KategoriJurusan;
 use App\Models\KelompokPemuridan;
 use App\Models\Regio;
 use App\Models\User;
@@ -35,6 +36,14 @@ class DashboardController extends Controller
     public function akk(): View
     {
         return $this->show('akk');
+    }
+
+    public function profile(): View
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        return view('dashboard.shell', $this->buildDashboardData((string) $user->role, $user, 'profil'));
     }
 
     public function kampus(): RedirectResponse
@@ -109,10 +118,15 @@ class DashboardController extends Controller
         $data['selectedKampus'] = $kampusDetail;
         $data['selectedCampusMembers'] = $this->selectedCampusMembers($kampusDetail);
         $data['selectedCampusGroups'] = $this->selectedCampusGroups($kampusDetail);
+        $selectedTreeGroups = $data['treeGroups']
+            ->filter(fn (array $group): bool => (int) ($group['campus_id'] ?? 0) === (int) $kampusDetail->kampus_id)
+            ->values();
+        $data['treeGroups'] = $selectedTreeGroups;
+        $data['treeSearchNames'] = $this->treeSearchNames($selectedTreeGroups);
         $data['dashboard'] = array_merge($data['dashboard'], [
             'title' => $campusLabel,
             'eyebrow' => 'Detail Kampus',
-            'subtitle' => 'Ringkasan anggota dan kelompok di '.$kampusDetail->nama_kampus.'.',
+            'subtitle' => 'Pohon pemuridan khusus '.$kampusDetail->nama_kampus.'.',
         ]);
 
         return view('dashboard.shell', $data);
@@ -145,6 +159,7 @@ class DashboardController extends Controller
             'treeSearchNames' => $canSeeAdminData ? $this->treeSearchNames($treeGroups) : collect(),
             'campusOptions' => $canSeeAdminData ? $this->campusOptions($regioScopeId, $isRegioScoped) : collect(),
             'regioOptions' => $canSeeAdminData ? $this->regioOptions($regioScopeId, $isRegioScoped) : collect(),
+            'kategoriJurusanOptions' => $this->kategoriJurusanOptions(),
             'selectedKampus' => null,
             'selectedCampusMembers' => collect(),
             'selectedCampusGroups' => collect(),
@@ -302,6 +317,7 @@ class DashboardController extends Controller
             ->withCount([
                 'users as total_users',
                 'users as active_users' => fn ($query) => $query->where('is_active', true),
+                'users as admin_users' => fn ($query) => $query->where('role', 'admin'),
                 'users as pkk_users' => fn ($query) => $query->where('role', 'pkk'),
                 'users as akk_users' => fn ($query) => $query->where('role', 'akk'),
             ])
@@ -520,6 +536,13 @@ class DashboardController extends Controller
             ->values();
     }
 
+    private function kategoriJurusanOptions()
+    {
+        return KategoriJurusan::query()
+            ->orderBy('nama_kategori')
+            ->get();
+    }
+
     private function treeNodeSearchNames($nodes): array
     {
         return $nodes
@@ -591,6 +614,11 @@ class DashboardController extends Controller
                 'title' => 'Pengguna',
                 'eyebrow' => 'Data Pengguna',
                 'subtitle' => 'Daftar akun admin, PKK, dan AKK Sistem KTB.',
+            ]),
+            'profil' => array_merge($config, [
+                'title' => 'Profil',
+                'eyebrow' => 'Akun Pengguna',
+                'subtitle' => 'Detail profil, data pribadi, dan pengaturan password akun Anda.',
             ]),
             'anggota-ktb' => array_merge($config, [
                 'title' => 'Anggota KTB',

@@ -28,7 +28,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ $dashboard['title'] }} - Sistem KTB</title>
+  <title>JejakMurid</title>
   <style>
     :root {
       --bg: #f6f7f4;
@@ -81,12 +81,15 @@
 
     .sidebar {
       min-height: 100vh;
+      height: 100vh;
       padding: 22px;
       border-right: 1px solid var(--line);
       background: rgba(255, 255, 255, 0.82);
       position: sticky;
       top: 0;
       align-self: start;
+      overflow-y: auto;
+      overscroll-behavior: contain;
     }
 
     .brand {
@@ -891,6 +894,48 @@
       border-bottom: 0;
     }
 
+    .profile-summary {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .profile-summary-avatar {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 74px;
+      width: 74px;
+      height: 74px;
+      border: 2px solid var(--line);
+      border-radius: 50%;
+      background: linear-gradient(180deg, #ffffff, #f3f7f5);
+      overflow: hidden;
+    }
+
+    .profile-summary-avatar img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .profile-summary h3 {
+      margin: 0;
+      color: var(--navy);
+      font-size: 1.2rem;
+      line-height: 1.25;
+    }
+
+    .profile-summary p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
     .table-wrap {
       width: 100%;
       overflow: auto;
@@ -1386,6 +1431,7 @@
       .sidebar {
         position: relative;
         min-height: auto;
+        height: auto;
       }
 
       .nav {
@@ -1679,7 +1725,7 @@
         <a class="brand" href="{{ route('dashboard') }}">
           <img src="{{ asset('images/ktb_logo.png') }}" alt="Logo KTB">
           <span>
-            <strong>Sistem KTB</strong>
+            <strong>JejakMurid</strong>
             <small>Perkantas Surabaya</small>
           </span>
         </a>
@@ -1718,8 +1764,6 @@
             <a class="{{ $activePage === 'anggota-ktb' ? 'active' : '' }}" href="{{ route('dashboard.anggota-ktb') }}">Anggota KTB</a>
             <a class="{{ $activePage === 'pohon' ? 'active' : '' }}" href="{{ route('dashboard.pohon') }}">Pohon</a>
           @endif
-        @else
-          <a href="{{ route($dashboard['route']) }}#profil-akun">Profil Akun</a>
         @endif
       </nav>
 
@@ -1751,7 +1795,8 @@
             </span>
           </button>
           <div class="user-dropdown" data-user-menu-dropdown hidden>
-            <a href="{{ route($dashboard['route']) }}#profil-akun">Profil</a>
+            <a href="{{ route('dashboard.profile') }}">Profil</a>
+            <a href="{{ route('dashboard.profile') }}#ubah-password">Ubah Password</a>
             @if ($isSwitchingAccess)
               <form method="POST" action="{{ route('dashboard.access.return') }}">
                 @csrf
@@ -1956,6 +2001,166 @@
         @if ($user->isAdmin())
           @include('dashboard.partials.campus-summary-table')
         @endif
+      @elseif ($activePage === 'profil')
+        <section class="content-grid">
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <span class="eyebrow">Profil</span>
+                <h2>Detail Akun</h2>
+              </div>
+              <span class="badge {{ $user->is_active ? '' : 'warning' }}">{{ $accountStatus }}</span>
+            </div>
+            <div class="profile-summary">
+              <span class="profile-summary-avatar">
+                <img src="{{ $profilePhoto }}" alt="Foto profil {{ $user->nama_lengkap }}">
+              </span>
+              <div>
+                <h3>{{ $user->nama_lengkap }}</h3>
+                <p>{{ $profileRoleLabel }} - {{ $profileScopeLabel }}</p>
+              </div>
+            </div>
+            <div class="detail-list">
+              <div class="detail-row">
+                <span class="detail-label">Nama</span>
+                <span class="detail-value">{{ $user->nama_lengkap }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Username</span>
+                <span class="detail-value">{{ $user->username }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Role</span>
+                <span class="detail-value">{{ $roleNames[$user->role] ?? strtoupper($user->role) }}</span>
+              </div>
+              @if ($user->isAdmin())
+                <div class="detail-row">
+                  <span class="detail-label">Tipe Admin</span>
+                  <span class="detail-value">{{ ucfirst($user->admin_tipe ?: '-') }}</span>
+                </div>
+              @endif
+              <div class="detail-row">
+                <span class="detail-label">Regio</span>
+                <span class="detail-value">{{ $user->regio?->nama_regio ?: ($user->isSuperAdmin() ? 'Developer' : '-') }}</span>
+              </div>
+              @unless ($user->isSuperAdmin() || $user->isAdmin())
+                <div class="detail-row">
+                  <span class="detail-label">Kampus</span>
+                  <span class="detail-value">{{ $user->kampus?->nama_kampus ?: '-' }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Tanggal Lahir</span>
+                  <span class="detail-value">{{ $user->tanggal_lahir?->format('d M Y') ?: '-' }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Jurusan</span>
+                  <span class="detail-value">{{ $user->jurusan ?: '-' }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Kategori Jurusan</span>
+                  <span class="detail-value">{{ $user->kategoriJurusan?->nama_kategori ?: '-' }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Angkatan</span>
+                  <span class="detail-value">{{ $user->angkatan ?: '-' }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">PKK</span>
+                  <span class="detail-value">{{ $user->pkkLeader?->nama_lengkap ?: '-' }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Kelompok KTB</span>
+                  <span class="detail-value">{{ $user->kelompokPemuridan?->nama_kelompok ?: '-' }}</span>
+                </div>
+              @endunless
+              <div class="detail-row">
+                <span class="detail-label">Foto Profil</span>
+                <span class="detail-value">{{ $user->foto_profil ?: 'Default' }}</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <span class="eyebrow">Edit</span>
+                <h2>Data Profil</h2>
+              </div>
+            </div>
+            <form method="POST" action="{{ route('dashboard.profile.update') }}" class="compact-edit-form">
+              @csrf
+              @method('PUT')
+              <div class="form-grid">
+                <div class="field is-full">
+                  <label for="profile-name">Nama Lengkap</label>
+                  <input id="profile-name" type="text" name="nama_lengkap" value="{{ old('nama_lengkap', $user->nama_lengkap) }}" maxlength="256" required>
+                </div>
+                @unless ($user->isSuperAdmin() || $user->isAdmin())
+                  <div class="field">
+                    <label for="profile-birth-date">Tanggal Lahir</label>
+                    <input id="profile-birth-date" type="date" name="tanggal_lahir" value="{{ old('tanggal_lahir', $user->tanggal_lahir?->format('Y-m-d')) }}">
+                  </div>
+                  <div class="field">
+                    <label for="profile-year">Angkatan</label>
+                    <input id="profile-year" type="number" name="angkatan" value="{{ old('angkatan', $user->angkatan) }}" min="1900" max="{{ date('Y') + 1 }}">
+                  </div>
+                  <div class="field is-full">
+                    <label for="profile-major">Jurusan</label>
+                    <input id="profile-major" type="text" name="jurusan" value="{{ old('jurusan', $user->jurusan) }}" maxlength="255">
+                  </div>
+                  <div class="field is-full">
+                    <label for="profile-major-category">Kategori Jurusan</label>
+                    <select id="profile-major-category" name="kategori_jurusan_id">
+                      <option value="">Tanpa kategori</option>
+                      @foreach ($kategoriJurusanOptions as $option)
+                        <option value="{{ $option->kategori_jurusan_id }}" {{ (string) old('kategori_jurusan_id', $user->kategori_jurusan_id) === (string) $option->kategori_jurusan_id ? 'selected' : '' }}>
+                          {{ $option->nama_kategori }}
+                        </option>
+                      @endforeach
+                    </select>
+                  </div>
+                @endunless
+                <div class="field is-full">
+                  <label for="profile-photo">Foto Profil</label>
+                  <input id="profile-photo" type="text" name="foto_profil" value="{{ old('foto_profil', $user->foto_profil) }}" maxlength="256" placeholder="URL atau path gambar">
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn is-compact" type="submit">Simpan Profil</button>
+              </div>
+            </form>
+          </article>
+        </section>
+
+        <section class="panel" id="ubah-password">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">Keamanan</span>
+              <h2>Ubah Password</h2>
+            </div>
+          </div>
+          <form method="POST" action="{{ route('dashboard.profile.password') }}" class="compact-edit-form">
+            @csrf
+            @method('PUT')
+            <div class="form-grid">
+              <div class="field">
+                <label for="profile-current-password">Password Saat Ini</label>
+                <input id="profile-current-password" type="password" name="current_password" autocomplete="current-password" required>
+              </div>
+              <div class="field">
+                <label for="profile-new-password">Password Baru</label>
+                <input id="profile-new-password" type="password" name="password" autocomplete="new-password" minlength="6" required>
+              </div>
+              <div class="field">
+                <label for="profile-new-password-confirmation">Konfirmasi Password Baru</label>
+                <input id="profile-new-password-confirmation" type="password" name="password_confirmation" autocomplete="new-password" minlength="6" required>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn is-compact" type="submit">Ubah Password</button>
+            </div>
+          </form>
+        </section>
       @elseif ($activePage === 'kampus' && $canSeeAdminData)
         <section class="panel" id="ringkasan-kampus">
           <div class="panel-head table-panel-head">
@@ -2090,133 +2295,6 @@
             </div>
           @endif
         </section>
-      @elseif ($activePage === 'kampus-detail' && $canSeeAdminData && $selectedKampus)
-        <section class="metric-grid" aria-label="Ringkasan {{ $selectedKampus->nama_kampus }}">
-          <article class="metric-card tone-primary">
-            <span>Total Anggota</span>
-            <strong>{{ number_format($selectedKampus->total_users, 0, ',', '.') }}</strong>
-            <small>{{ $selectedKampus->nama_kampus }}</small>
-          </article>
-          <article class="metric-card tone-success">
-            <span>Anggota Aktif</span>
-            <strong>{{ number_format($selectedKampus->active_users, 0, ',', '.') }}</strong>
-            <small>Akun aktif di kampus ini</small>
-          </article>
-          <article class="metric-card tone-info">
-            <span>PKK</span>
-            <strong>{{ number_format($selectedKampus->pkk_users, 0, ',', '.') }}</strong>
-            <small>Pemimpin kelompok</small>
-          </article>
-          <article class="metric-card tone-warning">
-            <span>Kelompok</span>
-            <strong>{{ number_format($selectedKampus->groups_count, 0, ',', '.') }}</strong>
-            <small>{{ number_format($selectedKampus->active_groups_count, 0, ',', '.') }} kelompok aktif</small>
-          </article>
-        </section>
-
-        <section class="content-grid">
-          <article class="panel">
-            <div class="panel-head">
-              <div>
-                <span class="eyebrow">Profil Kampus</span>
-                <h2>{{ $selectedKampus->nama_kampus }}</h2>
-              </div>
-              <span class="badge {{ $selectedKampus->is_active ? '' : 'warning' }}">
-                {{ $selectedKampus->is_active ? 'Aktif' : 'Nonaktif' }}
-              </span>
-            </div>
-            <div class="detail-list">
-              <div class="detail-row">
-                <span class="detail-label">Singkatan</span>
-                <span class="detail-value">{{ $selectedKampus->singkatan ?: '-' }}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Regio</span>
-                <span class="detail-value">{{ $selectedKampus->regio?->nama_regio ?: '-' }}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">AKK</span>
-                <span class="detail-value">{{ number_format($selectedKampus->akk_users, 0, ',', '.') }}</span>
-              </div>
-            </div>
-          </article>
-
-          <article class="panel">
-            <div class="panel-head">
-              <div>
-                <span class="eyebrow">Kelompok</span>
-                <h2>Kelompok Pemuridan</h2>
-              </div>
-              <span class="badge neutral">{{ number_format($selectedCampusGroups->count(), 0, ',', '.') }}</span>
-            </div>
-            @if ($selectedCampusGroups->isEmpty())
-              <div class="empty-state">Belum ada kelompok di kampus ini.</div>
-            @else
-              <ul class="member-list">
-                @foreach ($selectedCampusGroups as $group)
-                  <li>
-                    <div class="member-entry">
-                      <strong>{{ $group->nama_kelompok }}</strong>
-                      <span>Pemimpin {{ $group->pemimpin?->nama_lengkap ?: '-' }}</span>
-                    </div>
-                    <span class="badge {{ $group->is_active ? '' : 'warning' }}">
-                      {{ number_format($group->anggota_count, 0, ',', '.') }} anggota
-                    </span>
-                  </li>
-                @endforeach
-              </ul>
-            @endif
-          </article>
-        </section>
-
-        <section class="panel" id="anggota-kampus">
-          <div class="panel-head table-panel-head">
-            <div class="table-panel-title">
-              <span class="eyebrow">Direktori Kampus</span>
-              <h2>Anggota {{ $selectedKampus->singkatan ?: $selectedKampus->nama_kampus }}</h2>
-            </div>
-            <div class="row-actions table-panel-actions">
-              <input class="search" type="search" placeholder="Cari anggota kampus..." data-filter-table="campus-member-table" aria-label="Cari anggota kampus">
-            </div>
-          </div>
-
-          @if ($selectedCampusMembers->isEmpty())
-            <div class="empty-state">Belum ada anggota di kampus ini.</div>
-          @else
-            <div class="table-wrap">
-              <table class="table" id="campus-member-table">
-                <thead>
-                  <tr>
-                    <th>Nama</th>
-                    <th>Username</th>
-                    <th>Role</th>
-                    <th>Angkatan</th>
-                    <th>PKK</th>
-                    <th>Kelompok</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @foreach ($selectedCampusMembers as $member)
-                    <tr>
-                      <td><strong>{{ $member->nama_lengkap }}</strong></td>
-                      <td>{{ $member->username }}</td>
-                      <td><span class="badge neutral">{{ $roleNames[$member->role] ?? strtoupper($member->role) }}</span></td>
-                      <td>{{ $member->angkatan ?: '-' }}</td>
-                      <td>{{ $member->pkkLeader?->nama_lengkap ?: '-' }}</td>
-                      <td>{{ $member->kelompokPemuridan?->nama_kelompok ?: '-' }}</td>
-                      <td>
-                        <span class="badge {{ $member->is_active ? '' : 'warning' }}">
-                          {{ $member->is_active ? 'Aktif' : 'Nonaktif' }}
-                        </span>
-                      </td>
-                    </tr>
-                  @endforeach
-                </tbody>
-              </table>
-            </div>
-          @endif
-        </section>
       @elseif ($activePage === 'regio' && $canSeeAdminData)
         <section class="panel" id="daftar-regio">
           <div class="panel-head table-panel-head">
@@ -2259,7 +2337,7 @@
                     <th>Regio</th>
                     <th>Keterangan</th>
                     <th>Total User</th>
-                    <th>Aktif</th>
+                    <th>Admin</th>
                     <th>PKK</th>
                     <th>AKK</th>
                     @if ($canManageData)
@@ -2273,7 +2351,7 @@
                       <td><strong>{{ $regio->nama_regio }}</strong></td>
                       <td>{{ $regio->keterangan ?: '-' }}</td>
                       <td>{{ number_format($regio->total_users, 0, ',', '.') }}</td>
-                      <td>{{ number_format($regio->active_users, 0, ',', '.') }}</td>
+                      <td>{{ number_format($regio->admin_users, 0, ',', '.') }}</td>
                       <td>{{ number_format($regio->pkk_users, 0, ',', '.') }}</td>
                       <td>{{ number_format($regio->akk_users, 0, ',', '.') }}</td>
                       @if ($canManageData)
@@ -2318,7 +2396,8 @@
           $directoryTableId = $activePage === 'anggota-ktb' ? 'member-table' : 'user-table';
           $directoryCanManageAdmins = $activePage === 'pengguna' && $canManageData;
           $useDirectoryRoleFilter = $activePage === 'pengguna';
-          $directoryColspan = $directoryCanManageAdmins ? 8 : 7;
+          $showDirectoryKampusColumn = $activePage !== 'pengguna';
+          $directoryColspan = 6 + ($showDirectoryKampusColumn ? 1 : 0) + ($directoryCanManageAdmins ? 1 : 0);
         @endphp
 
         <section class="panel" id="{{ $activePage === 'anggota-ktb' ? 'daftar-anggota-ktb' : 'daftar-pengguna' }}">
@@ -2384,7 +2463,9 @@
                     <th>Username</th>
                     <th>Role</th>
                     <th>Regio</th>
-                    <th>Kampus</th>
+                    @if ($showDirectoryKampusColumn)
+                      <th>Kampus</th>
+                    @endif
                     <th>Angkatan</th>
                     <th>Status</th>
                     @if ($directoryCanManageAdmins)
@@ -2403,15 +2484,17 @@
                     >
                       <td>
                         <strong>{{ $row->nama_lengkap }}</strong>
-                        <div class="muted">Dibuat {{ $row->created_at?->format('d M Y') ?: '-' }}</div>
+                        <div class="muted">{{ $row->kampus?->singkatan ?: '-' }}</div>
                       </td>
                       <td>{{ $row->username }}</td>
                       <td><span class="badge neutral">{{ $roleNames[$row->role] ?? strtoupper($row->role) }}</span></td>
                       <td>{{ $row->regio?->nama_regio ?: '-' }}</td>
-                      <td>
-                        <strong>{{ $row->kampus?->singkatan ?: '-' }}</strong>
-                        <div class="muted">{{ $row->kampus?->nama_kampus ?: 'Belum ada kampus' }}</div>
-                      </td>
+                      @if ($showDirectoryKampusColumn)
+                        <td>
+                          <strong>{{ $row->kampus?->singkatan ?: '-' }}</strong>
+                          <div class="muted">{{ $row->kampus?->nama_kampus ?: 'Belum ada kampus' }}</div>
+                        </td>
+                      @endif
                       <td>{{ $row->angkatan ?: '-' }}</td>
                       <td>
                         <span class="badge {{ $row->is_active ? '' : 'warning' }}">
@@ -2420,18 +2503,18 @@
                       </td>
                       @if ($directoryCanManageAdmins)
                         <td>
-                          @if ($row->role === 'admin')
-                            <div class="row-actions">
-                              <form method="POST" action="{{ route('dashboard.pengguna.switch-access', $row) }}" class="inline-delete">
-                                @csrf
-                                <button class="btn icon-btn" type="submit" title="Pindah akses" aria-label="Pindah akses ke {{ $row->nama_lengkap }}">
-                                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-                                    <path d="m10 17 5-5-5-5"></path>
-                                    <path d="M15 12H3"></path>
-                                  </svg>
-                                </button>
-                              </form>
+                          <div class="row-actions">
+                            <form method="POST" action="{{ route('dashboard.pengguna.switch-access', $row) }}" class="inline-delete">
+                              @csrf
+                              <button class="btn icon-btn" type="submit" title="Pindah akses" aria-label="Pindah akses ke {{ $row->nama_lengkap }}">
+                                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                                  <path d="m10 17 5-5-5-5"></path>
+                                  <path d="M15 12H3"></path>
+                                </svg>
+                              </button>
+                            </form>
+                            @if ($row->role === 'admin')
                               <button class="btn icon-btn" type="button" data-modal-open="modal-admin-user-edit-{{ $row->user_id }}" title="Edit" aria-label="Edit {{ $row->nama_lengkap }}">
                                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                                   <path d="M12 20h9"></path>
@@ -2449,8 +2532,10 @@
                                   </svg>
                                 </button>
                               @endif
-                            </div>
+                            @endif
+                          </div>
 
+                          @if ($row->role === 'admin')
                             <div class="modal" id="modal-admin-user-edit-{{ $row->user_id }}" hidden>
                               <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-admin-user-edit-title-{{ $row->user_id }}">
                                 <div class="modal-head">
@@ -2490,8 +2575,6 @@
                                 </div>
                               </div>
                             @endif
-                          @else
-                            <span class="muted">-</span>
                           @endif
                         </td>
                       @endif
@@ -2509,7 +2592,7 @@
             </div>
           @endif
         </section>
-      @elseif ($activePage === 'pohon' && $canSeeAdminData)
+      @elseif (in_array($activePage, ['pohon', 'kampus-detail'], true) && $canSeeAdminData)
         <section class="tree-v2-surface">
           @if ($treeGroups->isEmpty())
             <div class="empty-state">Belum ada data PKK atau AKK untuk ditampilkan.</div>

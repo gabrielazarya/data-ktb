@@ -17,7 +17,7 @@ class AccessSwitchController extends Controller
         $currentUser = Auth::user();
 
         abort_unless($currentUser && $currentUser->isSuperAdmin(), 403);
-        abort_unless($user->isAdmin(), 404);
+        abort_unless(in_array($user->role, ['admin', 'pkk', 'akk'], true), 404);
 
         $superAdminId = $currentUser->getKey();
 
@@ -25,8 +25,8 @@ class AccessSwitchController extends Controller
         $request->session()->put(self::SESSION_KEY, $superAdminId);
 
         return redirect()
-            ->route('admin.dashboard')
-            ->with('success', 'Sekarang memakai akses admin '.$user->nama_lengkap.'.');
+            ->route($this->dashboardRouteFor($user))
+            ->with('success', 'Sekarang memakai akses '.$this->accessLabelFor($user).' '.$user->nama_lengkap.'.');
     }
 
     public function returnToSuperAdmin(Request $request): RedirectResponse
@@ -46,5 +46,25 @@ class AccessSwitchController extends Controller
         return redirect()
             ->route('superadmin.dashboard')
             ->with('success', 'Akses superadmin sudah dikembalikan.');
+    }
+
+    private function dashboardRouteFor(User $user): string
+    {
+        return match ($user->role) {
+            'admin' => 'admin.dashboard',
+            'pkk' => 'pkk.dashboard',
+            'akk' => 'akk.dashboard',
+            default => 'dashboard',
+        };
+    }
+
+    private function accessLabelFor(User $user): string
+    {
+        return match ($user->role) {
+            'admin' => 'admin',
+            'pkk' => 'PKK',
+            'akk' => 'AKK',
+            default => 'pengguna',
+        };
     }
 }

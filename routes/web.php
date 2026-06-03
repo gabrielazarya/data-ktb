@@ -5,6 +5,7 @@ use App\Http\Controllers\AccessSwitchController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KampusController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegioController;
 use App\Http\Controllers\TreeGroupController;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +25,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');
     Route::get('/pkk/dashboard', [DashboardController::class, 'pkk'])->name('pkk.dashboard');
     Route::get('/akk/dashboard', [DashboardController::class, 'akk'])->name('akk.dashboard');
+    Route::get('/dashboard/profil', [DashboardController::class, 'profile'])->name('dashboard.profile');
+    Route::put('/dashboard/profil', [ProfileController::class, 'update'])->name('dashboard.profile.update');
+    Route::put('/dashboard/profil/password', [ProfileController::class, 'updatePassword'])->name('dashboard.profile.password');
     Route::get('/dashboard/kampus', [DashboardController::class, 'kampus'])->name('dashboard.kampus');
     Route::get('/dashboard/kampus/{kampus}', [DashboardController::class, 'kampusDetail'])->name('dashboard.kampus.show');
     Route::post('/dashboard/kampus', [KampusController::class, 'store'])->name('dashboard.kampus.store');
