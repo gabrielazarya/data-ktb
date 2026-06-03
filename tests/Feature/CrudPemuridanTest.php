@@ -252,6 +252,8 @@ class CrudPemuridanTest extends TestCase
             ->assertOk()
             ->assertSee('Detail Kampus')
             ->assertSee('Kampus Surabaya Scope')
+            ->assertSee('Pohon Pemuridan')
+            ->assertSee('Anggota KTB')
             ->assertSee('AKK Scope Surabaya')
             ->assertSee('Grafik pohon pemuridan')
             ->assertDontSee('Direktori Kampus')
@@ -259,7 +261,27 @@ class CrudPemuridanTest extends TestCase
             ->assertDontSee('AKK Scope Malang');
 
         $this->actingAs($admin)
+            ->get(route('dashboard.kampus.tab', ['kampus' => $kampusSurabaya, 'tab' => 'pohon']))
+            ->assertOk()
+            ->assertSee('Grafik pohon pemuridan')
+            ->assertSee('AKK Scope Surabaya')
+            ->assertDontSee('AKK Scope Surabaya Lain')
+            ->assertDontSee('AKK Scope Malang');
+
+        $this->actingAs($admin)
+            ->get(route('dashboard.kampus.tab', ['kampus' => $kampusSurabaya, 'tab' => 'anggota']))
+            ->assertOk()
+            ->assertSee('Anggota KTB KSS')
+            ->assertSee('AKK Scope Surabaya')
+            ->assertDontSee('AKK Scope Surabaya Lain')
+            ->assertDontSee('AKK Scope Malang');
+
+        $this->actingAs($admin)
             ->get(route('dashboard.kampus.show', $kampusMalang))
+            ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->get(route('dashboard.kampus.tab', ['kampus' => $kampusMalang, 'tab' => 'anggota']))
             ->assertForbidden();
 
         $this->actingAs($admin)

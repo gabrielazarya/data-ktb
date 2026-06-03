@@ -30,6 +30,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/dashboard/profil/password', [ProfileController::class, 'updatePassword'])->name('dashboard.profile.password');
     Route::get('/dashboard/kampus', [DashboardController::class, 'kampus'])->name('dashboard.kampus');
     Route::get('/dashboard/kampus/{kampus}', [DashboardController::class, 'kampusDetail'])->name('dashboard.kampus.show');
+    Route::get('/dashboard/kampus/{kampus}/tab', [DashboardController::class, 'kampusTab'])->name('dashboard.kampus.tab');
     Route::post('/dashboard/kampus', [KampusController::class, 'store'])->name('dashboard.kampus.store');
     Route::put('/dashboard/kampus/{kampus}', [KampusController::class, 'update'])->name('dashboard.kampus.update');
     Route::delete('/dashboard/kampus/{kampus}', [KampusController::class, 'destroy'])->name('dashboard.kampus.destroy');

@@ -55,6 +55,7 @@
     body {
       margin: 0;
       min-height: 100vh;
+      overflow-x: hidden;
       font-family: Inter, Manrope, "Segoe UI", Arial, sans-serif;
       color: var(--text);
       background:
@@ -74,6 +75,9 @@
     }
 
     .app-shell {
+      width: 100%;
+      max-width: 100vw;
+      min-width: 0;
       min-height: 100vh;
       display: grid;
       grid-template-columns: 272px minmax(0, 1fr);
@@ -323,7 +327,10 @@
     }
 
     .main {
+      width: 100%;
+      max-width: 100%;
       min-width: 0;
+      overflow-x: hidden;
       padding: 26px;
     }
 
@@ -562,6 +569,137 @@
       padding-top: 0;
       padding-bottom: 0;
       white-space: nowrap;
+    }
+
+    .campus-tab-panel {
+      display: grid;
+      gap: 0;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      padding: 0;
+      overflow: visible;
+    }
+
+    .campus-tab-list {
+      position: relative;
+      display: flex;
+      gap: 2px;
+      align-items: flex-end;
+      min-height: 50px;
+      min-width: 0;
+      max-width: 100%;
+      padding: 8px 10px 0;
+      overflow-x: auto;
+      border: 1px solid #202a34;
+      border-bottom: 0;
+      border-radius: 10px 10px 0 0;
+      background: linear-gradient(180deg, #242b33 0%, #161b20 100%);
+      box-shadow: 0 14px 34px rgba(15, 37, 68, 0.13);
+      scrollbar-width: none;
+    }
+
+    .campus-tab-list::-webkit-scrollbar {
+      display: none;
+    }
+
+    .campus-tab-button {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex: 0 0 auto;
+      width: auto;
+      min-width: 150px;
+      min-height: 42px;
+      padding: 10px 18px 11px;
+      border: 0;
+      border-radius: 11px 11px 0 0;
+      background: transparent;
+      color: #cfd8dc;
+      font-size: 13px;
+      font-weight: 800;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background 0.16s ease, color 0.16s ease, transform 0.16s ease;
+    }
+
+    .campus-tab-button::before {
+      content: "";
+      flex: 0 0 auto;
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.42);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
+    }
+
+    .campus-tab-button:not(.is-active)::after {
+      content: "";
+      position: absolute;
+      top: 12px;
+      right: -1px;
+      bottom: 10px;
+      width: 1px;
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    .campus-tab-button:last-child:not(.is-active)::after {
+      display: none;
+    }
+
+    .campus-tab-button:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .campus-tab-button.is-active {
+      z-index: 1;
+      background: var(--panel);
+      color: var(--navy);
+      box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.7), 0 10px 24px rgba(0, 0, 0, 0.18);
+      transform: translateY(0);
+    }
+
+    .campus-tab-button.is-active::before {
+      background: linear-gradient(135deg, var(--green), var(--gold));
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+    }
+
+    .campus-tab-button.is-active::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      bottom: -1px;
+      left: 0;
+      height: 2px;
+      background: var(--panel);
+    }
+
+    .campus-tab-button:disabled {
+      cursor: wait;
+      opacity: 0.72;
+    }
+
+    .campus-tab-content {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      min-height: 420px;
+      overflow: hidden;
+    }
+
+    .campus-tab-panel .tree-v2-surface,
+    .campus-tab-panel .campus-members-panel {
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+    }
+
+    .campus-tab-content.is-loading {
+      opacity: 0.55;
+      pointer-events: none;
     }
 
     .panel h2 {
@@ -938,6 +1076,8 @@
 
     .table-wrap {
       width: 100%;
+      max-width: 100%;
+      min-width: 0;
       overflow: auto;
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -1128,6 +1268,9 @@
     }
 
     .tree-v2-surface {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
       min-height: 620px;
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -1178,6 +1321,9 @@
     }
 
     .tree-v2-scroll {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
       height: 620px;
       overflow: auto;
       cursor: grab;
@@ -1461,6 +1607,17 @@
         min-width: 0;
       }
 
+      .campus-tab-list {
+        min-height: 48px;
+        padding: 7px 8px 0;
+      }
+
+      .campus-tab-button {
+        min-width: 142px;
+        padding-right: 14px;
+        padding-left: 14px;
+      }
+
       .user-chip {
         justify-content: flex-start;
       }
@@ -1742,6 +1899,8 @@
             @php
               $isCampusNavOpen = in_array($activePage, ['kampus', 'kampus-detail'], true);
             @endphp
+            <a class="{{ $activePage === 'pohon' ? 'active' : '' }}" href="{{ route('dashboard.pohon') }}">Pohon Pemuridan</a>
+            <a class="{{ $activePage === 'anggota-ktb' ? 'active' : '' }}" href="{{ route('dashboard.anggota-ktb') }}">Anggota KTB</a>
             <details class="nav-group" {{ $isCampusNavOpen ? 'open' : '' }}>
               <summary class="{{ $isCampusNavOpen ? 'active' : '' }}">
                 <span>Kampus</span>
@@ -1761,8 +1920,6 @@
                 @endforelse
               </div>
             </details>
-            <a class="{{ $activePage === 'anggota-ktb' ? 'active' : '' }}" href="{{ route('dashboard.anggota-ktb') }}">Anggota KTB</a>
-            <a class="{{ $activePage === 'pohon' ? 'active' : '' }}" href="{{ route('dashboard.pohon') }}">Pohon</a>
           @endif
         @endif
       </nav>
@@ -2593,142 +2750,37 @@
           @endif
         </section>
       @elseif (in_array($activePage, ['pohon', 'kampus-detail'], true) && $canSeeAdminData)
-        <section class="tree-v2-surface">
-          @if ($treeGroups->isEmpty())
-            <div class="empty-state">Belum ada data PKK atau AKK untuk ditampilkan.</div>
-          @else
-            <div class="tree-v2-toolbar">
-              <div class="tree-v2-search">
-                <input class="search" type="search" list="tree-search-list" placeholder="Cari nama atau kampus..." data-tree-search-input aria-label="Cari nama atau kampus di pohon">
-                <button class="btn" type="button" data-tree-search-submit>Cari</button>
-                <datalist id="tree-search-list">
-                  @foreach ($treeSearchNames as $name)
-                    <option value="{{ $name }}"></option>
-                  @endforeach
-                </datalist>
-              </div>
-              <div class="zoom-controls" data-zoom-controls>
-                <button class="btn" type="button" data-zoom-out aria-label="Perkecil zoom">-</button>
-                <span class="zoom-value" data-zoom-value>90%</span>
-                <button class="btn" type="button" data-zoom-in aria-label="Perbesar zoom">+</button>
-              </div>
+        @if ($activePage === 'kampus-detail' && $selectedKampus)
+          <section class="campus-tab-panel" data-campus-tabs>
+            <div class="campus-tab-list" role="tablist" aria-label="Konten kampus">
+              <button
+                class="campus-tab-button is-active"
+                type="button"
+                role="tab"
+                aria-selected="true"
+                data-campus-tab-button
+                data-tab-url="{{ route('dashboard.kampus.tab', ['kampus' => $selectedKampus, 'tab' => 'pohon']) }}"
+              >
+                Pohon Pemuridan
+              </button>
+              <button
+                class="campus-tab-button"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                data-campus-tab-button
+                data-tab-url="{{ route('dashboard.kampus.tab', ['kampus' => $selectedKampus, 'tab' => 'anggota']) }}"
+              >
+                Anggota KTB
+              </button>
             </div>
-
-            <div class="tree-v2-scroll" data-drag-scroll>
-              <div class="tree-v2-zoom" data-tree-zoom>
-                <div class="tree-v2-graph" role="tree" aria-label="Grafik pohon pemuridan">
-                  <ul class="tree-v2-root">
-                    @foreach ($treeGroups as $group)
-                      @php
-                        $groupCampusId = $group['campus_id'] ?? null;
-                        $groupCampusLabel = $group['short'] !== '-' ? $group['short'] : $group['name'];
-                        $groupMeta = $group['total'].' anggota - '.($group['groups_count'] ?? 0).' kelompok';
-                      @endphp
-                      <li class="tree-v2-item">
-                        <article
-                          class="tree-v2-node tree-v2-campus is-actionable"
-                          data-tree-v2-node-action="campus"
-                          data-node-name="{{ $groupCampusLabel }}"
-                          data-node-meta="{{ $groupMeta }}"
-                          data-campus-id="{{ $groupCampusId ?: '' }}"
-                          data-campus-name="{{ $group['name'] }}"
-                          data-search-name="{{ $group['name'] }} {{ $group['short'] }}"
-                          tabindex="0"
-                          role="button"
-                          aria-label="Aksi untuk {{ $group['name'] }}"
-                        >
-                          <div class="tree-v2-node-head">
-                            <div class="tree-v2-name" title="{{ $group['name'] }}">{{ $groupCampusLabel }}</div>
-                            <span class="badge neutral">Kampus</span>
-                          </div>
-                          <div class="tree-v2-meta">{{ $groupMeta }}</div>
-                        </article>
-
-                        <ul class="tree-v2-children">
-                          @if ($group['branches']->isEmpty() && $group['unassigned_akk']->isEmpty())
-                            <li class="tree-v2-item">
-                              <article
-                                class="tree-v2-node tree-v2-empty-node is-actionable"
-                                data-tree-v2-node-action="empty-campus"
-                                data-node-name="Belum ada anggota"
-                                data-node-meta="{{ $group['name'] }}"
-                                data-campus-id="{{ $groupCampusId ?: '' }}"
-                                data-campus-name="{{ $group['name'] }}"
-                                data-search-name="{{ $group['name'] }} belum ada anggota"
-                                tabindex="0"
-                                role="button"
-                                aria-label="Tambah anggota untuk {{ $group['name'] }}"
-                              >
-                                <div class="tree-v2-name">Belum ada anggota</div>
-                                <div class="tree-v2-meta">Klik kampus untuk tambah anggota</div>
-                              </article>
-                            </li>
-                          @endif
-
-                          @foreach ($group['branches'] as $node)
-                            @include('dashboard.partials.tree-person-node', [
-                              'node' => $node,
-                              'campusId' => $groupCampusId,
-                              'campusName' => $group['name'],
-                            ])
-                          @endforeach
-
-                          @if ($group['unassigned_akk']->isNotEmpty())
-                            <li class="tree-v2-item">
-                              <article
-                                class="tree-v2-node tree-v2-group is-actionable"
-                                data-tree-v2-node-action="unassigned-akk"
-                                data-node-name="AKK tanpa PKK"
-                                data-node-meta="{{ $group['unassigned_akk']->count() }} AKK - {{ $group['name'] }}"
-                                data-campus-id="{{ $groupCampusId ?: '' }}"
-                                data-campus-name="{{ $group['name'] }}"
-                                data-search-name="AKK tanpa PKK {{ $group['name'] }}"
-                                tabindex="0"
-                                role="button"
-                                aria-label="Aksi untuk AKK tanpa PKK {{ $group['name'] }}"
-                              >
-                                <div class="tree-v2-node-head">
-                                  <div class="tree-v2-name">AKK tanpa PKK</div>
-                                  <span class="badge">{{ $group['unassigned_akk']->count() }}</span>
-                                </div>
-                                <div class="tree-v2-meta">{{ $group['name'] }}</div>
-                              </article>
-                              <ul class="tree-v2-children tree-v2-level-members">
-                                @foreach ($group['unassigned_akk'] as $row)
-                                  <li class="tree-v2-item">
-                                    <article
-                                      class="tree-v2-node tree-v2-person is-akk is-actionable"
-                                      data-tree-v2-node-action="akk"
-                                      data-node-name="{{ $row->nama_lengkap }}"
-                                      data-node-meta="{{ $row->username }}{{ $row->angkatan ? ' - '.$row->angkatan : '' }}"
-                                      data-campus-id="{{ $row->kampus_id ?: $groupCampusId ?: '' }}"
-                                      data-campus-name="{{ $row->kampus?->nama_kampus ?: $group['name'] }}"
-                                      data-person-id="{{ $row->user_id }}"
-                                      data-search-name="{{ $row->nama_lengkap }}"
-                                      tabindex="0"
-                                      role="button"
-                                      aria-label="Aksi untuk {{ $row->nama_lengkap }}"
-                                    >
-                                      <div class="tree-v2-node-head">
-                                        <div class="tree-v2-name" title="{{ $row->nama_lengkap }}">{{ $row->nama_lengkap }}</div>
-                                        <span class="badge">AKK</span>
-                                      </div>
-                                      <div class="tree-v2-meta">{{ $row->username }}{{ $row->angkatan ? ' - '.$row->angkatan : '' }}</div>
-                                    </article>
-                                  </li>
-                                @endforeach
-                              </ul>
-                            </li>
-                          @endif
-                        </ul>
-                      </li>
-                    @endforeach
-                  </ul>
-                </div>
-              </div>
+            <div class="campus-tab-content" data-campus-tab-content>
+              @include('dashboard.partials.campus-tree-tab')
             </div>
-          @endif
-        </section>
+          </section>
+        @else
+          @include('dashboard.partials.campus-tree-tab')
+        @endif
 
         <div class="modal" id="tree-node-action-modal" data-tree-v2-action-modal hidden>
           <div class="modal-panel is-small" role="dialog" aria-modal="true" aria-labelledby="tree-node-action-title">
@@ -3163,18 +3215,25 @@
       openModal(treeMemberModal);
     }
 
-    document.querySelectorAll('[data-tree-v2-node-action]').forEach(function (node) {
-      node.addEventListener('click', function (event) {
-        event.preventDefault();
-        openTreeActionModal(node);
-      });
+    function bindTreeNodeActions(root) {
+      (root || document).querySelectorAll('[data-tree-v2-node-action]').forEach(function (node) {
+        if (node.getAttribute('data-tree-action-bound') === '1') return;
 
-      node.addEventListener('keydown', function (event) {
-        if (event.key !== 'Enter' && event.key !== ' ') return;
-        event.preventDefault();
-        openTreeActionModal(node);
+        node.setAttribute('data-tree-action-bound', '1');
+        node.addEventListener('click', function (event) {
+          event.preventDefault();
+          openTreeActionModal(node);
+        });
+
+        node.addEventListener('keydown', function (event) {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          openTreeActionModal(node);
+        });
       });
-    });
+    }
+
+    bindTreeNodeActions(document);
 
     document.querySelectorAll('[data-tree-v2-action-do]').forEach(function (button) {
       button.addEventListener('click', function () {
@@ -3196,17 +3255,24 @@
       });
     });
 
-    document.querySelectorAll('[data-filter-table]').forEach(function (input) {
-      input.addEventListener('input', function () {
-        var table = document.getElementById(input.getAttribute('data-filter-table'));
-        var query = input.value.toLowerCase();
-        if (!table) return;
+    function bindFilterTables(root) {
+      (root || document).querySelectorAll('[data-filter-table]').forEach(function (input) {
+        if (input.getAttribute('data-filter-table-bound') === '1') return;
 
-        table.querySelectorAll('tbody tr').forEach(function (row) {
-          row.hidden = query !== '' && !row.textContent.toLowerCase().includes(query);
+        input.setAttribute('data-filter-table-bound', '1');
+        input.addEventListener('input', function () {
+          var table = document.getElementById(input.getAttribute('data-filter-table'));
+          var query = input.value.toLowerCase();
+          if (!table) return;
+
+          table.querySelectorAll('tbody tr').forEach(function (row) {
+            row.hidden = query !== '' && !row.textContent.toLowerCase().includes(query);
+          });
         });
       });
-    });
+    }
+
+    bindFilterTables(document);
 
     document.querySelectorAll('[data-filter-panel]').forEach(function (panel) {
       var table = document.getElementById(panel.getAttribute('data-filter-panel'));
@@ -3268,112 +3334,178 @@
       });
     });
 
-    var treeScrollArea = document.querySelector('[data-drag-scroll]');
-    if (treeScrollArea) {
-      var isDragging = false;
-      var dragStartX = 0;
-      var dragStartY = 0;
-      var startLeft = 0;
-      var startTop = 0;
+    function bindTreeCanvases(root) {
+      (root || document).querySelectorAll('[data-drag-scroll]').forEach(function (treeScrollArea) {
+        if (treeScrollArea.getAttribute('data-tree-canvas-bound') === '1') return;
 
-      treeScrollArea.addEventListener('mousedown', function (event) {
-        if (event.button !== 0 || event.target.closest('button, input, a, [data-tree-v2-node-action]')) return;
-        isDragging = true;
-        dragStartX = event.clientX;
-        dragStartY = event.clientY;
-        startLeft = treeScrollArea.scrollLeft;
-        startTop = treeScrollArea.scrollTop;
-        treeScrollArea.classList.add('is-dragging');
-      });
+        treeScrollArea.setAttribute('data-tree-canvas-bound', '1');
 
-      window.addEventListener('mousemove', function (event) {
-        if (!isDragging) return;
-        treeScrollArea.scrollLeft = startLeft - (event.clientX - dragStartX);
-        treeScrollArea.scrollTop = startTop - (event.clientY - dragStartY);
-      });
+        var surface = treeScrollArea.closest('.tree-v2-surface') || document;
+        var isDragging = false;
+        var dragStartX = 0;
+        var dragStartY = 0;
+        var startLeft = 0;
+        var startTop = 0;
 
-      window.addEventListener('mouseup', function () {
-        isDragging = false;
-        treeScrollArea.classList.remove('is-dragging');
-      });
-    }
+        treeScrollArea.addEventListener('mousedown', function (event) {
+          if (event.button !== 0 || event.target.closest('button, input, a, [data-tree-v2-node-action]')) return;
+          isDragging = true;
+          dragStartX = event.clientX;
+          dragStartY = event.clientY;
+          startLeft = treeScrollArea.scrollLeft;
+          startTop = treeScrollArea.scrollTop;
+          treeScrollArea.classList.add('is-dragging');
+        });
 
-    var zoomTarget = document.querySelector('[data-tree-zoom]');
-    var zoomValue = document.querySelector('[data-zoom-value]');
-    var zoomIn = document.querySelector('[data-zoom-in]');
-    var zoomOut = document.querySelector('[data-zoom-out]');
-    var treeScale = 0.9;
+        window.addEventListener('mousemove', function (event) {
+          if (!isDragging) return;
+          treeScrollArea.scrollLeft = startLeft - (event.clientX - dragStartX);
+          treeScrollArea.scrollTop = startTop - (event.clientY - dragStartY);
+        });
 
-    function applyTreeZoom() {
-      if (!zoomTarget) return;
-      treeScale = Math.min(1.4, Math.max(0.45, Number(treeScale.toFixed(2))));
-      zoomTarget.style.transform = 'scale(' + treeScale + ')';
-      if (zoomValue) {
-        zoomValue.textContent = Math.round(treeScale * 100) + '%';
-      }
-    }
+        window.addEventListener('mouseup', function () {
+          isDragging = false;
+          treeScrollArea.classList.remove('is-dragging');
+        });
 
-    if (zoomTarget) {
-      applyTreeZoom();
-    }
+        var zoomTarget = surface.querySelector('[data-tree-zoom]');
+        var zoomValue = surface.querySelector('[data-zoom-value]');
+        var zoomIn = surface.querySelector('[data-zoom-in]');
+        var zoomOut = surface.querySelector('[data-zoom-out]');
+        var treeScale = 0.9;
 
-    if (zoomIn) {
-      zoomIn.addEventListener('click', function () {
-        treeScale += 0.1;
+        function applyTreeZoom() {
+          if (!zoomTarget) return;
+          treeScale = Math.min(1.4, Math.max(0.45, Number(treeScale.toFixed(2))));
+          zoomTarget.style.transform = 'scale(' + treeScale + ')';
+          if (zoomValue) {
+            zoomValue.textContent = Math.round(treeScale * 100) + '%';
+          }
+        }
+
         applyTreeZoom();
+
+        if (zoomIn) {
+          zoomIn.addEventListener('click', function () {
+            treeScale += 0.1;
+            applyTreeZoom();
+          });
+        }
+
+        if (zoomOut) {
+          zoomOut.addEventListener('click', function () {
+            treeScale -= 0.1;
+            applyTreeZoom();
+          });
+        }
+
+        var treeSearchInput = surface.querySelector('[data-tree-search-input]');
+        var treeSearchButton = surface.querySelector('[data-tree-search-submit]');
+
+        function runTreeSearch() {
+          if (!treeSearchInput) return;
+          var query = treeSearchInput.value.trim().toLowerCase();
+          if (!query) return;
+
+          var nodes = Array.prototype.slice.call(surface.querySelectorAll('.tree-v2-node[data-search-name]'));
+          var target = nodes.find(function (node) {
+            return (node.getAttribute('data-search-name') || '').toLowerCase() === query;
+          }) || nodes.find(function (node) {
+            return (node.getAttribute('data-search-name') || '').toLowerCase().includes(query);
+          });
+
+          surface.querySelectorAll('.tree-v2-node.is-search-hit').forEach(function (node) {
+            node.classList.remove('is-search-hit');
+          });
+
+          if (!target) return;
+
+          var areaRect = treeScrollArea.getBoundingClientRect();
+          var targetRect = target.getBoundingClientRect();
+          treeScrollArea.scrollTo({
+            left: treeScrollArea.scrollLeft + (targetRect.left - areaRect.left) - ((areaRect.width - targetRect.width) / 2),
+            top: treeScrollArea.scrollTop + (targetRect.top - areaRect.top) - ((areaRect.height - targetRect.height) / 2),
+            behavior: 'smooth'
+          });
+          target.classList.add('is-search-hit');
+          target.focus({ preventScroll: true });
+        }
+
+        if (treeSearchButton) {
+          treeSearchButton.addEventListener('click', runTreeSearch);
+        }
+
+        if (treeSearchInput) {
+          treeSearchInput.addEventListener('keydown', function (event) {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            runTreeSearch();
+          });
+        }
       });
     }
 
-    if (zoomOut) {
-      zoomOut.addEventListener('click', function () {
-        treeScale -= 0.1;
-        applyTreeZoom();
+    bindTreeCanvases(document);
+
+    function bindCampusTabs(root) {
+      (root || document).querySelectorAll('[data-campus-tabs]').forEach(function (tabs) {
+        if (tabs.getAttribute('data-campus-tabs-bound') === '1') return;
+
+        tabs.setAttribute('data-campus-tabs-bound', '1');
+
+        var content = tabs.querySelector('[data-campus-tab-content]');
+        var buttons = Array.prototype.slice.call(tabs.querySelectorAll('[data-campus-tab-button]'));
+
+        buttons.forEach(function (button) {
+          button.addEventListener('click', function () {
+            var tabUrl = button.getAttribute('data-tab-url');
+            if (!tabUrl || !content || button.classList.contains('is-active')) return;
+
+            buttons.forEach(function (item) {
+              item.disabled = true;
+            });
+            content.classList.add('is-loading');
+
+            fetch(tabUrl, {
+              headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+              }
+            })
+              .then(function (response) {
+                if (!response.ok) {
+                  throw new Error('Gagal memuat tab');
+                }
+
+                return response.text();
+              })
+              .then(function (html) {
+                content.innerHTML = html;
+
+                buttons.forEach(function (item) {
+                  var isActive = item === button;
+                  item.classList.toggle('is-active', isActive);
+                  item.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                });
+
+                bindTreeNodeActions(content);
+                bindFilterTables(content);
+                bindTreeCanvases(content);
+              })
+              .catch(function () {
+                content.innerHTML = '<div class="empty-state">Tab belum bisa dimuat. Coba ulangi lagi.</div>';
+              })
+              .finally(function () {
+                buttons.forEach(function (item) {
+                  item.disabled = false;
+                });
+                content.classList.remove('is-loading');
+              });
+          });
+        });
       });
     }
 
-    var treeSearchInput = document.querySelector('[data-tree-search-input]');
-    var treeSearchButton = document.querySelector('[data-tree-search-submit]');
-
-    function runTreeSearch() {
-      if (!treeSearchInput || !treeScrollArea) return;
-      var query = treeSearchInput.value.trim().toLowerCase();
-      if (!query) return;
-
-      var nodes = Array.prototype.slice.call(document.querySelectorAll('.tree-v2-node[data-search-name]'));
-      var target = nodes.find(function (node) {
-        return (node.getAttribute('data-search-name') || '').toLowerCase() === query;
-      }) || nodes.find(function (node) {
-        return (node.getAttribute('data-search-name') || '').toLowerCase().includes(query);
-      });
-
-      document.querySelectorAll('.tree-v2-node.is-search-hit').forEach(function (node) {
-        node.classList.remove('is-search-hit');
-      });
-
-      if (!target) return;
-
-      var areaRect = treeScrollArea.getBoundingClientRect();
-      var targetRect = target.getBoundingClientRect();
-      treeScrollArea.scrollTo({
-        left: treeScrollArea.scrollLeft + (targetRect.left - areaRect.left) - ((areaRect.width - targetRect.width) / 2),
-        top: treeScrollArea.scrollTop + (targetRect.top - areaRect.top) - ((areaRect.height - targetRect.height) / 2),
-        behavior: 'smooth'
-      });
-      target.classList.add('is-search-hit');
-      target.focus({ preventScroll: true });
-    }
-
-    if (treeSearchButton) {
-      treeSearchButton.addEventListener('click', runTreeSearch);
-    }
-
-    if (treeSearchInput) {
-      treeSearchInput.addEventListener('keydown', function (event) {
-        if (event.key !== 'Enter') return;
-        event.preventDefault();
-        runTreeSearch();
-      });
-    }
+    bindCampusTabs(document);
 
     function dismissToast(toast) {
       if (!toast || toast.classList.contains('is-hiding')) return;

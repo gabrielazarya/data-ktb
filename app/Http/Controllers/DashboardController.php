@@ -9,6 +9,7 @@ use App\Models\Regio;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
@@ -59,6 +60,33 @@ class DashboardController extends Controller
     public function kampusDetail(Kampus $kampus): View
     {
         return $this->showKampusDetail($kampus);
+    }
+
+    public function kampusTab(Request $request, Kampus $kampus): View
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        abort_unless($user && $user->isAdmin(), 403);
+        $this->authorizeKampusDetailAccess($kampus, $user);
+
+        $kampusDetail = $this->campusDetailRow($kampus);
+        $tab = $request->query('tab') === 'anggota' ? 'anggota' : 'pohon';
+
+        if ($tab === 'anggota') {
+            return view('dashboard.partials.campus-members-tab', [
+                'selectedKampus' => $kampusDetail,
+                'selectedCampusMembers' => $this->selectedCampusMembers($kampusDetail),
+                'roleNames' => $this->roleNames(),
+            ]);
+        }
+
+        $treeGroups = $this->kampusTreeGroups($kampusDetail, $user);
+
+        return view('dashboard.partials.campus-tree-tab', [
+            'treeGroups' => $treeGroups,
+            'treeSearchNames' => $this->treeSearchNames($treeGroups),
+        ]);
     }
 
     public function regio(): View
@@ -118,9 +146,7 @@ class DashboardController extends Controller
         $data['selectedKampus'] = $kampusDetail;
         $data['selectedCampusMembers'] = $this->selectedCampusMembers($kampusDetail);
         $data['selectedCampusGroups'] = $this->selectedCampusGroups($kampusDetail);
-        $selectedTreeGroups = $data['treeGroups']
-            ->filter(fn (array $group): bool => (int) ($group['campus_id'] ?? 0) === (int) $kampusDetail->kampus_id)
-            ->values();
+        $selectedTreeGroups = $this->filterTreeGroupsByKampus($data['treeGroups'], $kampusDetail);
         $data['treeGroups'] = $selectedTreeGroups;
         $data['treeSearchNames'] = $this->treeSearchNames($selectedTreeGroups);
         $data['dashboard'] = array_merge($data['dashboard'], [
@@ -456,6 +482,30 @@ class DashboardController extends Controller
             ->where('kampus_id', $kampus->kampus_id)
             ->orderBy('nama_kelompok')
             ->get();
+    }
+
+    private function kampusTreeGroups(Kampus $kampus, User $user)
+    {
+        $data = $this->buildDashboardData((string) $user->role, $user, 'kampus-detail');
+
+        return $this->filterTreeGroupsByKampus($data['treeGroups'], $kampus);
+    }
+
+    private function filterTreeGroupsByKampus($treeGroups, Kampus $kampus)
+    {
+        return $treeGroups
+            ->filter(fn (array $group): bool => (int) ($group['campus_id'] ?? 0) === (int) $kampus->kampus_id)
+            ->values();
+    }
+
+    private function roleNames(): array
+    {
+        return [
+            'super_admin' => 'Super Admin',
+            'admin' => 'Admin',
+            'pkk' => 'PKK',
+            'akk' => 'AKK',
+        ];
     }
 
     private function regioOptions(?int $regioId, bool $isRegioScoped)
