@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class TreeGroupController extends Controller
@@ -23,10 +24,12 @@ class TreeGroupController extends Controller
                 'required',
                 Rule::exists('users', 'user_id')->where(fn ($query) => $query->whereIn('role', ['akk', 'pkk'])),
             ],
+            'kampus_id' => ['nullable', Rule::exists('kampus', 'kampus_id')],
             'nama_kelompok' => ['nullable', 'string', 'max:256'],
             'is_active' => ['nullable', 'boolean'],
         ], [], [
             'pemimpin_id' => 'pemimpin kelompok',
+            'kampus_id' => 'kampus kelompok',
             'nama_kelompok' => 'nama kelompok',
             'is_active' => 'status aktif',
         ]);
@@ -35,8 +38,15 @@ class TreeGroupController extends Controller
             ->with('kampus')
             ->findOrFail($validated['pemimpin_id']);
         $this->authorizePersonAccess($leader, $actor);
+        $targetCampus = filled($validated['kampus_id'] ?? null)
+            ? Kampus::query()->findOrFail($validated['kampus_id'])
+            : null;
+        $this->authorizeKampusAccess($targetCampus, $actor);
         $leader->loadMissing('kampus');
-        $regioId = $this->resolveRegioId($actor, $leader->regio_id ?: $leader->kampus?->regio_id);
+        $regioId = $this->resolveRegioId(
+            $actor,
+            $targetCampus?->regio_id ?: $leader->regio_id ?: $leader->kampus?->regio_id
+        );
         $groupName = trim((string) ($validated['nama_kelompok'] ?? ''));
 
         $leader->forceFill([
@@ -47,7 +57,7 @@ class TreeGroupController extends Controller
 
         KelompokPemuridan::query()->create([
             'nama_kelompok' => $groupName !== '' ? $groupName : 'Kelompok '.$leader->nama_lengkap,
-            'kampus_id' => $leader->kampus_id,
+            'kampus_id' => $targetCampus?->kampus_id ?: $leader->kampus_id,
             'regio_id' => $regioId,
             'pemimpin_id' => $leader->user_id,
             'is_active' => $request->boolean('is_active'),
@@ -105,6 +115,120 @@ class TreeGroupController extends Controller
             ? 'Anggota berhasil ditambahkan ke '.$group->nama_kelompok.'.'
             : 'Anggota berhasil ditambahkan ke pohon pemuridan.'
         );
+    }
+
+    public function updateGroup(Request $request, KelompokPemuridan $kelompok): RedirectResponse
+    {
+        $actor = $this->authorizeManageData();
+        $kelompok->loadMissing(['kampus', 'pemimpin']);
+        $this->authorizeGroupAccess($kelompok, $actor);
+
+        $validated = $request->validate([
+            'nama_kelompok' => ['required', 'string', 'max:256'],
+            'kampus_id' => ['nullable', Rule::exists('kampus', 'kampus_id')],
+            'is_active' => ['nullable', 'boolean'],
+        ], [], [
+            'nama_kelompok' => 'nama kelompok',
+            'kampus_id' => 'kampus kelompok',
+            'is_active' => 'status aktif',
+        ]);
+
+        $targetCampus = filled($validated['kampus_id'] ?? null)
+            ? Kampus::query()->findOrFail($validated['kampus_id'])
+            : null;
+        $this->authorizeKampusAccess($targetCampus, $actor);
+
+        $kelompok->update([
+            'nama_kelompok' => $validated['nama_kelompok'],
+            'kampus_id' => $targetCampus?->kampus_id,
+            'regio_id' => $this->resolveRegioId(
+                $actor,
+                $targetCampus?->regio_id ?: $kelompok->regio_id ?: $kelompok->pemimpin?->regio_id
+            ),
+            'is_active' => $request->boolean('is_active'),
+        ]);
+
+        return back()->with('success', 'Kelompok berhasil diperbarui.');
+    }
+
+    public function destroyGroup(KelompokPemuridan $kelompok): RedirectResponse
+    {
+        $actor = $this->authorizeManageData();
+        $kelompok->loadMissing(['kampus', 'pemimpin', 'anggota']);
+        $this->authorizeGroupAccess($kelompok, $actor);
+
+        DB::transaction(function () use ($kelompok): void {
+            $leader = $kelompok->pemimpin;
+            $affectedMembers = $kelompok->anggota()->get();
+
+            User::query()
+                ->where('kelompok_id', $kelompok->kelompok_id)
+                ->update([
+                    'kelompok_id' => null,
+                    'pkk_id' => null,
+                ]);
+
+            $kelompok->delete();
+
+            if ($leader) {
+                $this->syncPkkRole($leader);
+            }
+
+            $affectedMembers->each(fn (User $member) => $this->syncPkkRole($member));
+        });
+
+        return back()->with('success', 'Kelompok berhasil dihapus.');
+    }
+
+    public function updateMember(Request $request, User $anggota): RedirectResponse
+    {
+        $actor = $this->authorizeManageData();
+        $anggota->loadMissing(['kampus', 'kelompokPemuridan', 'kelompokDipimpin']);
+        $this->authorizeEditableMember($anggota, $actor);
+
+        $payload = $this->validateUserPayload($request, 'nama anggota');
+        $campus = filled($payload['kampus_id'] ?? null)
+            ? Kampus::query()->find($payload['kampus_id'])
+            : null;
+        $this->authorizeKampusAccess($campus, $actor);
+
+        $anggota->update([
+            ...$payload,
+            'regio_id' => $this->resolveRegioId(
+                $actor,
+                $campus?->regio_id ?: $anggota->regio_id ?: $anggota->kelompokPemuridan?->regio_id
+            ),
+            'is_active' => $request->boolean('is_active'),
+        ]);
+
+        return back()->with('success', 'Anggota berhasil diperbarui.');
+    }
+
+    public function destroyMember(User $anggota): RedirectResponse
+    {
+        $actor = $this->authorizeManageData();
+        $anggota->loadMissing(['kampus', 'kelompokDipimpin.anggota', 'kelompokPemuridan']);
+        $this->authorizeEditableMember($anggota, $actor);
+
+        DB::transaction(function () use ($anggota): void {
+            $affectedMembers = User::query()
+                ->where('pkk_id', $anggota->user_id)
+                ->orWhereIn('kelompok_id', $anggota->kelompokDipimpin->pluck('kelompok_id'))
+                ->get();
+
+            User::query()
+                ->where('pkk_id', $anggota->user_id)
+                ->update([
+                    'pkk_id' => null,
+                    'kelompok_id' => null,
+                ]);
+
+            $anggota->delete();
+
+            $affectedMembers->each(fn (User $member) => $this->syncPkkRole($member));
+        });
+
+        return back()->with('success', 'Anggota berhasil dihapus.');
     }
 
     private function validateUserPayload(Request $request, string $nameLabel, bool $validateCampus = true): array
@@ -199,6 +323,13 @@ class TreeGroupController extends Controller
         abort_unless(filled($actor->regio_id) && (int) $personRegioId === (int) $actor->regio_id, 403);
     }
 
+    private function authorizeEditableMember(User $member, User $actor): void
+    {
+        abort_unless(in_array($member->role, ['akk', 'pkk'], true), 404);
+
+        $this->authorizePersonAccess($member, $actor);
+    }
+
     private function authorizeGroupAccess(?KelompokPemuridan $group, User $actor): void
     {
         if ($group === null || $actor->isSuperAdmin()) {
@@ -230,5 +361,23 @@ class TreeGroupController extends Controller
         );
 
         return $user;
+    }
+
+    private function syncPkkRole(User $member): void
+    {
+        $member->refresh();
+
+        if (! in_array($member->role, ['akk', 'pkk'], true)) {
+            return;
+        }
+
+        $hasGroups = KelompokPemuridan::query()
+            ->where('pemimpin_id', $member->user_id)
+            ->exists();
+
+        $member->forceFill([
+            'role' => $hasGroups ? 'pkk' : 'akk',
+            'admin_tipe' => null,
+        ])->save();
     }
 }

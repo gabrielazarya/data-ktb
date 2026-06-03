@@ -2927,9 +2927,14 @@
           $directorySearch = $activePage === 'anggota-ktb' ? 'Cari anggota KTB...' : 'Cari pengguna...';
           $directoryTableId = $activePage === 'anggota-ktb' ? 'member-table' : 'user-table';
           $directoryCanManageAdmins = $activePage === 'pengguna' && $canManageData;
-          $useDirectoryRoleFilter = $activePage === 'pengguna';
-          $showDirectoryKampusColumn = $activePage !== 'pengguna';
-          $directoryColspan = 6 + ($showDirectoryKampusColumn ? 1 : 0) + ($directoryCanManageAdmins ? 1 : 0);
+          $directoryCanManageGroups = $activePage === 'anggota-ktb' && $canManageData;
+          $directoryHasActions = $directoryCanManageAdmins || $directoryCanManageGroups;
+          $useDirectoryRoleFilter = in_array($activePage, ['pengguna', 'anggota-ktb'], true);
+          $directoryDefaultRole = $activePage === 'pengguna' ? 'admin' : '';
+          $directoryRoleFilterOptions = $activePage === 'anggota-ktb'
+              ? ['' => 'Semua', 'pkk' => 'PKK', 'akk' => 'AKK']
+              : ['admin' => 'Admin', 'pkk' => 'PKK', 'akk' => 'AKK', '' => 'Semua'];
+          $directoryColspan = 6 + ($directoryHasActions ? 1 : 0);
         @endphp
 
         <section class="panel" id="{{ $activePage === 'anggota-ktb' ? 'daftar-anggota-ktb' : 'daftar-pengguna' }}">
@@ -2951,11 +2956,10 @@
                 aria-label="{{ $directorySearch }}"
               >
               @if ($useDirectoryRoleFilter)
-                <select class="search" data-column-filter="role" aria-label="Filter role pengguna">
-                  <option value="admin" selected>Admin</option>
-                  <option value="pkk">PKK</option>
-                  <option value="akk">AKK</option>
-                  <option value="">Semua</option>
+                <select class="search" data-column-filter="role" aria-label="Filter role {{ $activePage === 'anggota-ktb' ? 'anggota' : 'pengguna' }}">
+                  @foreach ($directoryRoleFilterOptions as $roleValue => $roleLabel)
+                    <option value="{{ $roleValue }}"{{ (string) $directoryDefaultRole === (string) $roleValue ? ' selected' : '' }}>{{ $roleLabel }}</option>
+                  @endforeach
                 </select>
               @endif
               @if ($directoryCanManageAdmins)
@@ -2995,18 +2999,18 @@
                     <th>Username</th>
                     <th>Role</th>
                     <th>Regio</th>
-                    @if ($showDirectoryKampusColumn)
-                      <th>Kampus</th>
-                    @endif
                     <th>Angkatan</th>
                     <th>Status</th>
-                    @if ($directoryCanManageAdmins)
+                    @if ($directoryHasActions)
                       <th>Aksi</th>
                     @endif
                   </tr>
                 </thead>
                 <tbody>
                   @foreach ($directoryRows as $row)
+                    @php
+                      $memberGroupModalId = 'modal-member-group-create-'.$row->user_id;
+                    @endphp
                     <tr
                       @if ($useDirectoryRoleFilter)
                         data-filter-row
@@ -3021,49 +3025,55 @@
                       <td>{{ $row->username }}</td>
                       <td><span class="badge neutral">{{ $roleNames[$row->role] ?? strtoupper($row->role) }}</span></td>
                       <td>{{ $row->regio?->nama_regio ?: '-' }}</td>
-                      @if ($showDirectoryKampusColumn)
-                        <td>
-                          <strong>{{ $row->kampus?->singkatan ?: '-' }}</strong>
-                          <div class="muted">{{ $row->kampus?->nama_kampus ?: 'Belum ada kampus' }}</div>
-                        </td>
-                      @endif
                       <td>{{ $row->angkatan ?: '-' }}</td>
                       <td>
                         <span class="badge {{ $row->is_active ? '' : 'warning' }}">
                           {{ $row->is_active ? 'Aktif' : 'Nonaktif' }}
                         </span>
                       </td>
-                      @if ($directoryCanManageAdmins)
+                      @if ($directoryHasActions)
                         <td>
                           <div class="row-actions">
-                            <form method="POST" action="{{ route('dashboard.pengguna.switch-access', $row) }}" class="inline-delete">
-                              @csrf
-                              <button class="btn icon-btn" type="submit" title="Pindah akses" aria-label="Pindah akses ke {{ $row->nama_lengkap }}">
-                                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-                                  <path d="m10 17 5-5-5-5"></path>
-                                  <path d="M15 12H3"></path>
-                                </svg>
-                              </button>
-                            </form>
-                            @if ($row->role === 'admin')
-                              <button class="btn icon-btn" type="button" data-modal-open="modal-admin-user-edit-{{ $row->user_id }}" title="Edit" aria-label="Edit {{ $row->nama_lengkap }}">
-                                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                  <path d="M12 20h9"></path>
-                                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
-                                </svg>
-                              </button>
-                              @if ($row->user_id !== $user->user_id)
-                                <button class="btn icon-btn is-danger" type="button" data-modal-open="modal-admin-user-delete-{{ $row->user_id }}" title="Hapus" aria-label="Hapus {{ $row->nama_lengkap }}">
+                            @if ($directoryCanManageAdmins)
+                              <form method="POST" action="{{ route('dashboard.pengguna.switch-access', $row) }}" class="inline-delete">
+                                @csrf
+                                <button class="btn icon-btn" type="submit" title="Pindah akses" aria-label="Pindah akses ke {{ $row->nama_lengkap }}">
                                   <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                    <path d="M3 6h18"></path>
-                                    <path d="M8 6V4h8v2"></path>
-                                    <path d="m19 6-1 14H6L5 6"></path>
-                                    <path d="M10 11v6"></path>
-                                    <path d="M14 11v6"></path>
+                                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                                    <path d="m10 17 5-5-5-5"></path>
+                                    <path d="M15 12H3"></path>
                                   </svg>
                                 </button>
+                              </form>
+                              @if ($row->role === 'admin')
+                                <button class="btn icon-btn" type="button" data-modal-open="modal-admin-user-edit-{{ $row->user_id }}" title="Edit" aria-label="Edit {{ $row->nama_lengkap }}">
+                                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                    <path d="M12 20h9"></path>
+                                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                                  </svg>
+                                </button>
+                                @if ($row->user_id !== $user->user_id)
+                                  <button class="btn icon-btn is-danger" type="button" data-modal-open="modal-admin-user-delete-{{ $row->user_id }}" title="Hapus" aria-label="Hapus {{ $row->nama_lengkap }}">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                      <path d="M3 6h18"></path>
+                                      <path d="M8 6V4h8v2"></path>
+                                      <path d="m19 6-1 14H6L5 6"></path>
+                                      <path d="M10 11v6"></path>
+                                      <path d="M14 11v6"></path>
+                                    </svg>
+                                  </button>
+                                @endif
                               @endif
+                            @endif
+                            @if ($directoryCanManageGroups)
+                              <button class="btn icon-btn" type="button" data-modal-open="{{ $memberGroupModalId }}" title="Tambah kelompok" aria-label="Tambah kelompok untuk {{ $row->nama_lengkap }}">
+                                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                  <circle cx="9" cy="7" r="4"></circle>
+                                  <path d="M19 8v6"></path>
+                                  <path d="M16 11h6"></path>
+                                </svg>
+                              </button>
                             @endif
                           </div>
 
@@ -3107,6 +3117,58 @@
                                 </div>
                               </div>
                             @endif
+                          @endif
+                          @if ($directoryCanManageGroups)
+                            <div class="modal" id="{{ $memberGroupModalId }}" hidden>
+                              <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-member-group-create-title-{{ $row->user_id }}">
+                                <div class="modal-head">
+                                  <div>
+                                    <span class="eyebrow">Tambah Kelompok</span>
+                                    <h2 id="modal-member-group-create-title-{{ $row->user_id }}">{{ $row->nama_lengkap }}</h2>
+                                  </div>
+                                  <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+                                </div>
+                                <div class="modal-body">
+                                  <p class="muted">Anggota ini akan menjadi pemimpin kelompok. User yang sama tetap dipakai, tidak dibuat ulang.</p>
+                                  <form method="POST" action="{{ route('dashboard.pohon.kelompok.store') }}" class="compact-edit-form">
+                                    @csrf
+                                    <input type="hidden" name="_modal_id" value="{{ $memberGroupModalId }}">
+                                    <input type="hidden" name="pemimpin_id" value="{{ $row->user_id }}">
+                                    <div class="form-grid">
+                                      <div class="field is-full">
+                                        <label for="member-group-name-{{ $row->user_id }}">Nama Kelompok</label>
+                                        <input id="member-group-name-{{ $row->user_id }}" type="text" name="nama_kelompok" value="{{ old('_modal_id') === $memberGroupModalId ? old('nama_kelompok') : '' }}" maxlength="256" placeholder="Kosongkan untuk memakai nama anggota">
+                                      </div>
+                                      <div class="field is-full">
+                                        <label for="member-group-campus-{{ $row->user_id }}">Kampus Kelompok</label>
+                                        <select id="member-group-campus-{{ $row->user_id }}" name="kampus_id">
+                                          <option value="">Tanpa kampus</option>
+                                          @foreach ($campusOptions as $option)
+                                            @php
+                                              $selectedCampusId = old('_modal_id') === $memberGroupModalId
+                                                  ? old('kampus_id')
+                                                  : $row->kampus_id;
+                                            @endphp
+                                            <option value="{{ $option->kampus_id }}" {{ (string) $selectedCampusId === (string) $option->kampus_id ? 'selected' : '' }}>
+                                              {{ $option->nama_kampus }}{{ $option->singkatan ? ' ('.$option->singkatan.')' : '' }}{{ $user->isSuperAdmin() && $option->regio?->nama_regio ? ' - '.$option->regio->nama_regio : '' }}
+                                            </option>
+                                          @endforeach
+                                        </select>
+                                      </div>
+                                      <label class="checkbox-field">
+                                        <input type="hidden" name="is_active" value="0">
+                                        <input type="checkbox" name="is_active" value="1" {{ old('_modal_id') === $memberGroupModalId ? (old('is_active') ? 'checked' : '') : 'checked' }}>
+                                        Aktif
+                                      </label>
+                                    </div>
+                                    <div class="form-actions">
+                                      <button class="btn is-compact" type="submit">Simpan Kelompok</button>
+                                      <button class="btn is-compact" type="button" data-modal-close>Batal</button>
+                                    </div>
+                                  </form>
+                                </div>
+                              </div>
+                            </div>
                           @endif
                         </td>
                       @endif
@@ -3171,6 +3233,10 @@
                 @if ($canManageData)
                   <button class="btn is-compact" type="button" data-tree-v2-action-do="add_group" hidden>Tambah Kelompok</button>
                   <button class="btn is-compact" type="button" data-tree-v2-action-do="add_member" hidden>Tambah Anggota</button>
+                  <button class="btn is-compact" type="button" data-tree-v2-action-do="edit_member" hidden>Edit Anggota</button>
+                  <button class="btn is-compact" type="button" data-tree-v2-action-do="edit_group" hidden>Edit Kelompok</button>
+                  <button class="btn is-compact is-danger" type="button" data-tree-v2-action-do="delete_member" hidden>Hapus Anggota</button>
+                  <button class="btn is-compact is-danger" type="button" data-tree-v2-action-do="delete_group" hidden>Hapus Kelompok</button>
                 @endif
                 <button class="btn is-compact" type="button" data-tree-v2-action-do="view_detail">Lihat Detail</button>
               </div>
@@ -3200,6 +3266,17 @@
                     <div class="field is-full">
                       <label for="tree-group-name">Nama Kelompok</label>
                       <input id="tree-group-name" type="text" name="nama_kelompok" value="{{ old('nama_kelompok') }}" maxlength="256" placeholder="Kosongkan untuk memakai nama pemimpin">
+                    </div>
+                    <div class="field is-full">
+                      <label for="tree-group-campus">Kampus Kelompok</label>
+                      <select id="tree-group-campus" name="kampus_id" data-tree-group-campus-select>
+                        <option value="">Tanpa kampus</option>
+                        @foreach ($campusOptions as $option)
+                          <option value="{{ $option->kampus_id }}" {{ (string) old('kampus_id') === (string) $option->kampus_id ? 'selected' : '' }}>
+                            {{ $option->nama_kampus }}{{ $option->singkatan ? ' ('.$option->singkatan.')' : '' }}{{ $user->isSuperAdmin() && $option->regio?->nama_regio ? ' - '.$option->regio->nama_regio : '' }}
+                          </option>
+                        @endforeach
+                      </select>
                     </div>
                     <label class="checkbox-field">
                       <input type="hidden" name="is_active" value="0">
@@ -3260,6 +3337,177 @@
                   </div>
                   <div class="form-actions">
                     <button class="btn is-compact" type="submit">Simpan Anggota</button>
+                    <button class="btn is-compact" type="button" data-modal-close>Batal</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          @php
+            $oldTreeMemberId = old('_tree_person_id');
+            $oldTreeGroupId = old('_tree_group_id');
+          @endphp
+
+          <div class="modal" id="tree-member-edit-modal" data-tree-member-edit-modal hidden>
+            <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="tree-member-edit-title">
+              <div class="modal-head">
+                <div>
+                  <span class="eyebrow">Edit Anggota</span>
+                  <h2 id="tree-member-edit-title" data-tree-member-edit-title>Anggota</h2>
+                </div>
+                <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+              </div>
+              <div class="modal-body">
+                <form
+                  method="POST"
+                  action="{{ $oldTreeMemberId ? route('dashboard.pohon.anggota.update', ['anggota' => $oldTreeMemberId]) : '' }}"
+                  class="compact-edit-form"
+                  data-tree-member-edit-form
+                  data-action-template="{{ route('dashboard.pohon.anggota.update', ['anggota' => '__ID__']) }}"
+                >
+                  @csrf
+                  @method('PUT')
+                  <input type="hidden" name="_modal_id" value="tree-member-edit-modal">
+                  <input type="hidden" name="_tree_person_id" value="{{ old('_tree_person_id') }}" data-tree-member-edit-id>
+                  <div class="form-grid">
+                    <div class="field">
+                      <label for="tree-member-edit-campus">Kampus</label>
+                      <select id="tree-member-edit-campus" name="kampus_id" data-tree-member-edit-campus>
+                        <option value="">Tanpa kampus</option>
+                        @foreach ($campusOptions as $option)
+                          <option value="{{ $option->kampus_id }}" {{ (string) old('kampus_id') === (string) $option->kampus_id ? 'selected' : '' }}>
+                            {{ $option->nama_kampus }}{{ $option->singkatan ? ' ('.$option->singkatan.')' : '' }}{{ $user->isSuperAdmin() && $option->regio?->nama_regio ? ' - '.$option->regio->nama_regio : '' }}
+                          </option>
+                        @endforeach
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="tree-member-edit-angkatan">Angkatan</label>
+                      <input id="tree-member-edit-angkatan" type="number" name="angkatan" value="{{ old('_modal_id') === 'tree-member-edit-modal' ? old('angkatan') : '' }}" min="1900" max="{{ date('Y') + 1 }}" data-tree-member-edit-angkatan>
+                    </div>
+                    <div class="field is-full">
+                      <label for="tree-member-edit-name">Nama Anggota</label>
+                      <input id="tree-member-edit-name" type="text" name="nama_lengkap" value="{{ old('_modal_id') === 'tree-member-edit-modal' ? old('nama_lengkap') : '' }}" maxlength="256" required data-tree-member-edit-name>
+                    </div>
+                    <label class="checkbox-field">
+                      <input type="hidden" name="is_active" value="0">
+                      <input type="checkbox" name="is_active" value="1" {{ old('_modal_id') === 'tree-member-edit-modal' ? (old('is_active') ? 'checked' : '') : 'checked' }} data-tree-member-edit-active>
+                      Aktif
+                    </label>
+                  </div>
+                  <div class="form-actions">
+                    <button class="btn is-compact" type="submit">Simpan Anggota</button>
+                    <button class="btn is-compact" type="button" data-modal-close>Batal</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal" id="tree-member-delete-modal" data-tree-member-delete-modal hidden>
+            <div class="modal-panel is-small" role="dialog" aria-modal="true" aria-labelledby="tree-member-delete-title">
+              <div class="modal-head">
+                <div>
+                  <span class="eyebrow">Hapus Anggota</span>
+                  <h2 id="tree-member-delete-title" data-tree-member-delete-title>Anggota</h2>
+                </div>
+                <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+              </div>
+              <div class="modal-body">
+                <p class="muted" data-tree-member-delete-context>Hapus anggota ini dari pohon pemuridan?</p>
+                <form
+                  method="POST"
+                  action=""
+                  class="inline-delete"
+                  data-tree-member-delete-form
+                  data-action-template="{{ route('dashboard.pohon.anggota.destroy', ['anggota' => '__ID__']) }}"
+                >
+                  @csrf
+                  @method('DELETE')
+                  <div class="form-actions">
+                    <button class="btn is-compact is-danger" type="submit">Hapus Anggota</button>
+                    <button class="btn is-compact" type="button" data-modal-close>Batal</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal" id="tree-group-edit-modal" data-tree-group-edit-modal hidden>
+            <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="tree-group-edit-title">
+              <div class="modal-head">
+                <div>
+                  <span class="eyebrow">Edit Kelompok</span>
+                  <h2 id="tree-group-edit-title" data-tree-group-edit-title>Kelompok</h2>
+                </div>
+                <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+              </div>
+              <div class="modal-body">
+                <form
+                  method="POST"
+                  action="{{ $oldTreeGroupId ? route('dashboard.pohon.kelompok.update', ['kelompok' => $oldTreeGroupId]) : '' }}"
+                  class="compact-edit-form"
+                  data-tree-group-edit-form
+                  data-action-template="{{ route('dashboard.pohon.kelompok.update', ['kelompok' => '__ID__']) }}"
+                >
+                  @csrf
+                  @method('PUT')
+                  <input type="hidden" name="_modal_id" value="tree-group-edit-modal">
+                  <input type="hidden" name="_tree_group_id" value="{{ old('_tree_group_id') }}" data-tree-group-edit-id>
+                  <div class="form-grid">
+                    <div class="field is-full">
+                      <label for="tree-group-edit-name">Nama Kelompok</label>
+                      <input id="tree-group-edit-name" type="text" name="nama_kelompok" value="{{ old('_modal_id') === 'tree-group-edit-modal' ? old('nama_kelompok') : '' }}" maxlength="256" required data-tree-group-edit-name>
+                    </div>
+                    <div class="field is-full">
+                      <label for="tree-group-edit-campus">Kampus Kelompok</label>
+                      <select id="tree-group-edit-campus" name="kampus_id" data-tree-group-edit-campus>
+                        <option value="">Tanpa kampus</option>
+                        @foreach ($campusOptions as $option)
+                          <option value="{{ $option->kampus_id }}" {{ (string) old('kampus_id') === (string) $option->kampus_id ? 'selected' : '' }}>
+                            {{ $option->nama_kampus }}{{ $option->singkatan ? ' ('.$option->singkatan.')' : '' }}{{ $user->isSuperAdmin() && $option->regio?->nama_regio ? ' - '.$option->regio->nama_regio : '' }}
+                          </option>
+                        @endforeach
+                      </select>
+                    </div>
+                    <label class="checkbox-field">
+                      <input type="hidden" name="is_active" value="0">
+                      <input type="checkbox" name="is_active" value="1" {{ old('_modal_id') === 'tree-group-edit-modal' ? (old('is_active') ? 'checked' : '') : 'checked' }} data-tree-group-edit-active>
+                      Aktif
+                    </label>
+                  </div>
+                  <div class="form-actions">
+                    <button class="btn is-compact" type="submit">Simpan Kelompok</button>
+                    <button class="btn is-compact" type="button" data-modal-close>Batal</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal" id="tree-group-delete-modal" data-tree-group-delete-modal hidden>
+            <div class="modal-panel is-small" role="dialog" aria-modal="true" aria-labelledby="tree-group-delete-title">
+              <div class="modal-head">
+                <div>
+                  <span class="eyebrow">Hapus Kelompok</span>
+                  <h2 id="tree-group-delete-title" data-tree-group-delete-title>Kelompok</h2>
+                </div>
+                <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+              </div>
+              <div class="modal-body">
+                <p class="muted" data-tree-group-delete-context>Hapus kelompok ini? Anggota di dalamnya akan dilepas dari kelompok.</p>
+                <form
+                  method="POST"
+                  action=""
+                  class="inline-delete"
+                  data-tree-group-delete-form
+                  data-action-template="{{ route('dashboard.pohon.kelompok.destroy', ['kelompok' => '__ID__']) }}"
+                >
+                  @csrf
+                  @method('DELETE')
+                  <div class="form-actions">
+                    <button class="btn is-compact is-danger" type="submit">Hapus Kelompok</button>
                     <button class="btn is-compact" type="button" data-modal-close>Batal</button>
                   </div>
                 </form>
@@ -3422,11 +3670,35 @@
     var treeGroupContext = treeGroupModal ? treeGroupModal.querySelector('[data-tree-group-context]') : null;
     var treeGroupContextInput = treeGroupModal ? treeGroupModal.querySelector('[data-tree-group-context-input]') : null;
     var treeGroupLeaderInput = treeGroupModal ? treeGroupModal.querySelector('[data-tree-group-leader-input]') : null;
+    var treeGroupCampusSelect = treeGroupModal ? treeGroupModal.querySelector('[data-tree-group-campus-select]') : null;
     var treeMemberModal = document.querySelector('[data-tree-member-create-modal]');
     var treeMemberContext = treeMemberModal ? treeMemberModal.querySelector('[data-tree-member-context]') : null;
     var treeMemberContextInput = treeMemberModal ? treeMemberModal.querySelector('[data-tree-member-context-input]') : null;
     var treeMemberGroupInput = treeMemberModal ? treeMemberModal.querySelector('[data-tree-member-group-input]') : null;
     var treeMemberCampusSelect = treeMemberModal ? treeMemberModal.querySelector('[data-tree-member-campus-select]') : null;
+    var treeMemberEditModal = document.querySelector('[data-tree-member-edit-modal]');
+    var treeMemberEditTitle = treeMemberEditModal ? treeMemberEditModal.querySelector('[data-tree-member-edit-title]') : null;
+    var treeMemberEditForm = treeMemberEditModal ? treeMemberEditModal.querySelector('[data-tree-member-edit-form]') : null;
+    var treeMemberEditId = treeMemberEditModal ? treeMemberEditModal.querySelector('[data-tree-member-edit-id]') : null;
+    var treeMemberEditName = treeMemberEditModal ? treeMemberEditModal.querySelector('[data-tree-member-edit-name]') : null;
+    var treeMemberEditCampus = treeMemberEditModal ? treeMemberEditModal.querySelector('[data-tree-member-edit-campus]') : null;
+    var treeMemberEditAngkatan = treeMemberEditModal ? treeMemberEditModal.querySelector('[data-tree-member-edit-angkatan]') : null;
+    var treeMemberEditActive = treeMemberEditModal ? treeMemberEditModal.querySelector('[data-tree-member-edit-active]') : null;
+    var treeMemberDeleteModal = document.querySelector('[data-tree-member-delete-modal]');
+    var treeMemberDeleteTitle = treeMemberDeleteModal ? treeMemberDeleteModal.querySelector('[data-tree-member-delete-title]') : null;
+    var treeMemberDeleteContext = treeMemberDeleteModal ? treeMemberDeleteModal.querySelector('[data-tree-member-delete-context]') : null;
+    var treeMemberDeleteForm = treeMemberDeleteModal ? treeMemberDeleteModal.querySelector('[data-tree-member-delete-form]') : null;
+    var treeGroupEditModal = document.querySelector('[data-tree-group-edit-modal]');
+    var treeGroupEditTitle = treeGroupEditModal ? treeGroupEditModal.querySelector('[data-tree-group-edit-title]') : null;
+    var treeGroupEditForm = treeGroupEditModal ? treeGroupEditModal.querySelector('[data-tree-group-edit-form]') : null;
+    var treeGroupEditId = treeGroupEditModal ? treeGroupEditModal.querySelector('[data-tree-group-edit-id]') : null;
+    var treeGroupEditName = treeGroupEditModal ? treeGroupEditModal.querySelector('[data-tree-group-edit-name]') : null;
+    var treeGroupEditCampus = treeGroupEditModal ? treeGroupEditModal.querySelector('[data-tree-group-edit-campus]') : null;
+    var treeGroupEditActive = treeGroupEditModal ? treeGroupEditModal.querySelector('[data-tree-group-edit-active]') : null;
+    var treeGroupDeleteModal = document.querySelector('[data-tree-group-delete-modal]');
+    var treeGroupDeleteTitle = treeGroupDeleteModal ? treeGroupDeleteModal.querySelector('[data-tree-group-delete-title]') : null;
+    var treeGroupDeleteContext = treeGroupDeleteModal ? treeGroupDeleteModal.querySelector('[data-tree-group-delete-context]') : null;
+    var treeGroupDeleteForm = treeGroupDeleteModal ? treeGroupDeleteModal.querySelector('[data-tree-group-delete-form]') : null;
 
     function treeNodeLabel(type) {
       var labels = {
@@ -3451,11 +3723,30 @@
         meta: data.nodeMeta || '',
         campusId: data.campusId || '',
         campusName: data.campusName || '',
+        memberCampusId: data.memberCampusId || data.campusId || '',
         personId: data.personId || '',
         groupId: data.groupId || '',
         leaderId: data.leaderId || '',
-        leaderName: data.leaderName || ''
+        leaderName: data.leaderName || '',
+        role: data.role || '',
+        angkatan: data.angkatan || '',
+        isActive: data.isActive || '1'
       };
+    }
+
+    function applyActionTemplate(form, id) {
+      if (!form || !id) return false;
+
+      var template = form.getAttribute('data-action-template');
+      if (!template) return false;
+
+      form.action = template.replace('__ID__', encodeURIComponent(id));
+      return true;
+    }
+
+    function setCheckboxValue(checkbox, value) {
+      if (!checkbox) return;
+      checkbox.checked = value !== '0' && value !== 'false';
     }
 
     function setTreeActionVisibility(action, visible) {
@@ -3530,9 +3821,15 @@
       var canAddMember = activeTreeNodeData.type === 'campus'
         || activeTreeNodeData.type === 'empty-campus'
         || (activeTreeNodeData.type === 'group' && Boolean(activeTreeNodeData.groupId));
+      var canManageMember = (activeTreeNodeData.type === 'person' || activeTreeNodeData.type === 'akk') && Boolean(activeTreeNodeData.personId);
+      var canManageGroup = activeTreeNodeData.type === 'group' && Boolean(activeTreeNodeData.groupId);
 
       setTreeActionVisibility('add_group', canAddGroup);
       setTreeActionVisibility('add_member', canAddMember);
+      setTreeActionVisibility('edit_member', canManageMember);
+      setTreeActionVisibility('delete_member', canManageMember);
+      setTreeActionVisibility('edit_group', canManageGroup);
+      setTreeActionVisibility('delete_group', canManageGroup);
       setTreeActionVisibility('view_detail', true);
 
       openModal(treeActionModal, node);
@@ -3554,6 +3851,10 @@
 
       if (treeGroupLeaderInput) {
         treeGroupLeaderInput.value = activeTreeNodeData.personId || '';
+      }
+
+      if (treeGroupCampusSelect) {
+        treeGroupCampusSelect.value = activeTreeNodeData.campusId || '';
       }
 
       closeModal(treeActionModal);
@@ -3590,6 +3891,94 @@
       openModal(treeMemberModal);
     }
 
+    function openTreeMemberEditModal() {
+      if (!treeMemberEditModal || !activeTreeNodeData || !activeTreeNodeData.personId) return;
+      if (!applyActionTemplate(treeMemberEditForm, activeTreeNodeData.personId)) return;
+
+      if (treeMemberEditTitle) {
+        treeMemberEditTitle.textContent = activeTreeNodeData.name;
+      }
+
+      if (treeMemberEditId) {
+        treeMemberEditId.value = activeTreeNodeData.personId;
+      }
+
+      if (treeMemberEditName) {
+        treeMemberEditName.value = activeTreeNodeData.name || '';
+      }
+
+      if (treeMemberEditCampus) {
+        treeMemberEditCampus.value = activeTreeNodeData.memberCampusId || '';
+      }
+
+      if (treeMemberEditAngkatan) {
+        treeMemberEditAngkatan.value = activeTreeNodeData.angkatan || '';
+      }
+
+      setCheckboxValue(treeMemberEditActive, activeTreeNodeData.isActive);
+
+      closeModal(treeActionModal);
+      openModal(treeMemberEditModal);
+    }
+
+    function openTreeMemberDeleteModal() {
+      if (!treeMemberDeleteModal || !activeTreeNodeData || !activeTreeNodeData.personId) return;
+      if (!applyActionTemplate(treeMemberDeleteForm, activeTreeNodeData.personId)) return;
+
+      if (treeMemberDeleteTitle) {
+        treeMemberDeleteTitle.textContent = activeTreeNodeData.name;
+      }
+
+      if (treeMemberDeleteContext) {
+        treeMemberDeleteContext.textContent = 'Hapus ' + activeTreeNodeData.name + '? Kelompok yang dipimpin orang ini juga akan dihapus dari pohon.';
+      }
+
+      closeModal(treeActionModal);
+      openModal(treeMemberDeleteModal);
+    }
+
+    function openTreeGroupEditModal() {
+      if (!treeGroupEditModal || !activeTreeNodeData || !activeTreeNodeData.groupId) return;
+      if (!applyActionTemplate(treeGroupEditForm, activeTreeNodeData.groupId)) return;
+
+      if (treeGroupEditTitle) {
+        treeGroupEditTitle.textContent = activeTreeNodeData.name;
+      }
+
+      if (treeGroupEditId) {
+        treeGroupEditId.value = activeTreeNodeData.groupId;
+      }
+
+      if (treeGroupEditName) {
+        treeGroupEditName.value = activeTreeNodeData.name || '';
+      }
+
+      if (treeGroupEditCampus) {
+        treeGroupEditCampus.value = activeTreeNodeData.campusId || '';
+      }
+
+      setCheckboxValue(treeGroupEditActive, activeTreeNodeData.isActive);
+
+      closeModal(treeActionModal);
+      openModal(treeGroupEditModal);
+    }
+
+    function openTreeGroupDeleteModal() {
+      if (!treeGroupDeleteModal || !activeTreeNodeData || !activeTreeNodeData.groupId) return;
+      if (!applyActionTemplate(treeGroupDeleteForm, activeTreeNodeData.groupId)) return;
+
+      if (treeGroupDeleteTitle) {
+        treeGroupDeleteTitle.textContent = activeTreeNodeData.name;
+      }
+
+      if (treeGroupDeleteContext) {
+        treeGroupDeleteContext.textContent = 'Hapus kelompok ' + activeTreeNodeData.name + '? Anggota di dalamnya akan dilepas dari kelompok.';
+      }
+
+      closeModal(treeActionModal);
+      openModal(treeGroupDeleteModal);
+    }
+
     function bindTreeNodeActions(root) {
       (root || document).querySelectorAll('[data-tree-v2-node-action]').forEach(function (node) {
         if (node.getAttribute('data-tree-action-bound') === '1') return;
@@ -3621,6 +4010,26 @@
 
         if (action === 'add_member') {
           openTreeMemberModal();
+          return;
+        }
+
+        if (action === 'edit_member') {
+          openTreeMemberEditModal();
+          return;
+        }
+
+        if (action === 'delete_member') {
+          openTreeMemberDeleteModal();
+          return;
+        }
+
+        if (action === 'edit_group') {
+          openTreeGroupEditModal();
+          return;
+        }
+
+        if (action === 'delete_group') {
+          openTreeGroupDeleteModal();
           return;
         }
 

@@ -388,11 +388,19 @@ class DashboardController extends Controller
             ->orderBy('nama_kampus')
             ->get()
             ->map(function (Kampus $kampus) use ($allPeople, $allGroups): array {
-                $people = $allPeople->where('kampus_id', $kampus->kampus_id)->values();
-                $personIds = $people->pluck('user_id');
                 $pemuridanGroups = $allGroups
-                    ->filter(fn (KelompokPemuridan $group): bool => $personIds->contains($group->pemimpin_id))
+                    ->where('kampus_id', $kampus->kampus_id)
                     ->values();
+                $groupIds = $pemuridanGroups->pluck('kelompok_id')->unique();
+                $personIds = $allPeople
+                    ->where('kampus_id', $kampus->kampus_id)
+                    ->pluck('user_id')
+                    ->merge($pemuridanGroups->pluck('pemimpin_id'))
+                    ->merge($allPeople->whereIn('kelompok_id', $groupIds)->pluck('user_id'))
+                    ->filter()
+                    ->unique()
+                    ->values();
+                $people = $allPeople->whereIn('user_id', $personIds)->values();
                 $leaderIds = $pemuridanGroups->pluck('pemimpin_id')->unique();
 
                 return [
@@ -414,10 +422,18 @@ class DashboardController extends Controller
         $unassignedPeople = $allPeople
             ->whereNull('kampus_id')
             ->values();
-        $unassignedPersonIds = $unassignedPeople->pluck('user_id');
         $unassignedPemuridanGroups = $allGroups
-            ->filter(fn (KelompokPemuridan $group): bool => $unassignedPersonIds->contains($group->pemimpin_id))
+            ->whereNull('kampus_id')
             ->values();
+        $unassignedGroupIds = $unassignedPemuridanGroups->pluck('kelompok_id')->unique();
+        $unassignedPersonIds = $unassignedPeople
+            ->pluck('user_id')
+            ->merge($unassignedPemuridanGroups->pluck('pemimpin_id'))
+            ->merge($allPeople->whereIn('kelompok_id', $unassignedGroupIds)->pluck('user_id'))
+            ->filter()
+            ->unique()
+            ->values();
+        $unassignedTreePeople = $allPeople->whereIn('user_id', $unassignedPersonIds)->values();
 
         if ($unassignedPeople->isNotEmpty() || $unassignedPemuridanGroups->isNotEmpty()) {
             $leaderIds = $unassignedPemuridanGroups->pluck('pemimpin_id')->unique();
@@ -428,13 +444,13 @@ class DashboardController extends Controller
                 'name' => 'Tanpa Kampus',
                 'short' => '-',
                 'is_active' => false,
-                'pkk' => $unassignedPeople->whereIn('user_id', $leaderIds)->values(),
-                'akk' => $unassignedPeople,
+                'pkk' => $unassignedTreePeople->whereIn('user_id', $leaderIds)->values(),
+                'akk' => $unassignedTreePeople,
                 'groups' => $unassignedPemuridanGroups,
-                'branches' => $this->buildPersonTree($unassignedPeople, $unassignedPemuridanGroups),
+                'branches' => $this->buildPersonTree($unassignedTreePeople, $unassignedPemuridanGroups),
                 'unassigned_akk' => collect(),
                 'groups_count' => $unassignedPemuridanGroups->count(),
-                'total' => $unassignedPeople->count(),
+                'total' => $unassignedTreePeople->count(),
             ]);
         }
 
@@ -466,9 +482,23 @@ class DashboardController extends Controller
 
     private function selectedCampusMembers(Kampus $kampus)
     {
+        $groups = KelompokPemuridan::query()
+            ->where('kampus_id', $kampus->kampus_id)
+            ->get(['kelompok_id', 'pemimpin_id']);
+        $groupIds = $groups->pluck('kelompok_id')->unique();
+        $personIds = User::query()
+            ->whereIn('role', ['akk', 'pkk'])
+            ->where(function ($query) use ($kampus, $groups, $groupIds) {
+                $query
+                    ->where('kampus_id', $kampus->kampus_id)
+                    ->orWhereIn('user_id', $groups->pluck('pemimpin_id')->filter()->unique())
+                    ->orWhereIn('kelompok_id', $groupIds);
+            })
+            ->pluck('user_id');
+
         return User::query()
             ->with(['pkkLeader', 'kelompokPemuridan'])
-            ->where('kampus_id', $kampus->kampus_id)
+            ->whereIn('user_id', $personIds)
             ->whereIn('role', ['akk', 'pkk'])
             ->orderBy('nama_lengkap')
             ->get();

@@ -46,5 +46,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard/anggota-ktb', [DashboardController::class, 'anggotaKtb'])->name('dashboard.anggota-ktb');
     Route::get('/dashboard/pohon-pemuridan', [DashboardController::class, 'pohon'])->name('dashboard.pohon');
     Route::post('/dashboard/pohon-pemuridan/kelompok', [TreeGroupController::class, 'storeGroup'])->name('dashboard.pohon.kelompok.store');
+    Route::put('/dashboard/pohon-pemuridan/kelompok/{kelompok}', [TreeGroupController::class, 'updateGroup'])->name('dashboard.pohon.kelompok.update');
+    Route::delete('/dashboard/pohon-pemuridan/kelompok/{kelompok}', [TreeGroupController::class, 'destroyGroup'])->name('dashboard.pohon.kelompok.destroy');
     Route::post('/dashboard/pohon-pemuridan/anggota', [TreeGroupController::class, 'storeMember'])->name('dashboard.pohon.anggota.store');
+    Route::put('/dashboard/pohon-pemuridan/anggota/{anggota}', [TreeGroupController::class, 'updateMember'])->name('dashboard.pohon.anggota.update');
+    Route::delete('/dashboard/pohon-pemuridan/anggota/{anggota}', [TreeGroupController::class, 'destroyMember'])->name('dashboard.pohon.anggota.destroy');
 });

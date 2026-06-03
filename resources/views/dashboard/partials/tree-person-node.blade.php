@@ -2,11 +2,12 @@
   $person = $node['person'];
   $nodeGroups = $node['groups'];
   $isPkkNode = $node['is_pkk'];
-  $nodeCampusId = $person->kampus_id ?: ($campusId ?? null);
-  $nodeCampusName = $person->kampus?->nama_kampus ?: ($campusName ?? 'Tanpa kampus');
+  $nodeCampusId = $campusId ?? $person->kampus_id;
+  $nodeCampusName = $campusName ?? ($person->kampus?->nama_kampus ?: 'Tanpa kampus');
   $nodeAction = $isPkkNode ? 'person' : 'akk';
   $nodeLabel = $isPkkNode ? 'PKK' : 'AKK';
   $nodeMeta = $person->username.' - '.$nodeGroups->count().' kelompok';
+  $nodeIsActive = $person->is_active ? '1' : '0';
 @endphp
 
 <li class="tree-v2-item">
@@ -17,8 +18,11 @@
     data-node-meta="{{ $nodeMeta }}"
     data-campus-id="{{ $nodeCampusId ?: '' }}"
     data-campus-name="{{ $nodeCampusName }}"
+    data-member-campus-id="{{ $person->kampus_id ?: '' }}"
     data-person-id="{{ $person->user_id }}"
     data-role="{{ $nodeLabel }}"
+    data-angkatan="{{ $person->angkatan ?: '' }}"
+    data-is-active="{{ $nodeIsActive }}"
     data-search-name="{{ $person->nama_lengkap }}"
     tabindex="0"
     role="button"
@@ -36,6 +40,7 @@
       @foreach ($nodeGroups as $pemuridanGroup)
         @php
           $pemuridanGroupId = $pemuridanGroup['id'] ?? null;
+          $pemuridanGroupModel = $pemuridanGroup['model'] ?? null;
           $pemuridanGroupMembers = $pemuridanGroup['members'];
           $pemuridanGroupMeta = $pemuridanGroupMembers->count().' anggota - pemimpin '.$person->nama_lengkap;
         @endphp
@@ -50,6 +55,7 @@
             data-group-id="{{ $pemuridanGroupId ?: '' }}"
             data-leader-id="{{ $person->user_id }}"
             data-leader-name="{{ $person->nama_lengkap }}"
+            data-is-active="{{ $pemuridanGroupModel?->is_active ? '1' : '0' }}"
             data-search-name="{{ $pemuridanGroup['name'] }} {{ $person->nama_lengkap }}"
             tabindex="0"
             role="button"

@@ -353,6 +353,15 @@ class CrudPemuridanTest extends TestCase
         $this->actingAs($admin)
             ->post(route('dashboard.pohon.kelompok.store'), [
                 'pemimpin_id' => $memberSurabaya->user_id,
+                'kampus_id' => $kampusMalang->kampus_id,
+                'nama_kelompok' => 'Kelompok Target Malang Terlarang',
+                'is_active' => '1',
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->post(route('dashboard.pohon.kelompok.store'), [
+                'pemimpin_id' => $memberSurabaya->user_id,
                 'nama_kelompok' => 'Kelompok Surabaya Scope',
                 'is_active' => '1',
             ])
@@ -451,7 +460,7 @@ class CrudPemuridanTest extends TestCase
             'is_active' => true,
         ]);
 
-        User::query()->create([
+        $pkk = User::query()->create([
             'username' => 'pkk_direktori_test',
             'password' => 'password',
             'nama_lengkap' => 'PKK Direktori Test',
@@ -461,7 +470,7 @@ class CrudPemuridanTest extends TestCase
             'is_active' => true,
         ]);
 
-        User::query()->create([
+        $akk = User::query()->create([
             'username' => 'akk_direktori_test',
             'password' => 'password',
             'nama_lengkap' => 'AKK Direktori Test',
@@ -491,7 +500,38 @@ class CrudPemuridanTest extends TestCase
             ->get(route('dashboard.anggota-ktb'))
             ->assertOk()
             ->assertSee('PKK Direktori Test')
-            ->assertSee('AKK Direktori Test');
+            ->assertSee('AKK Direktori Test')
+            ->assertDontSee('<th>Kampus</th>', false)
+            ->assertSee('<option value="" selected>Semua</option>', false)
+            ->assertSee('<option value="pkk">PKK</option>', false)
+            ->assertSee('<option value="akk">AKK</option>', false)
+            ->assertSee('data-column-filter="role"', false)
+            ->assertSee('data-modal-open="modal-member-group-create-'.$pkk->user_id.'"', false)
+            ->assertSee('data-modal-open="modal-member-group-create-'.$akk->user_id.'"', false)
+            ->assertSee('Kampus Kelompok');
+
+        $this->actingAs($admin)
+            ->post(route('dashboard.pohon.kelompok.store'), [
+                '_modal_id' => 'modal-member-group-create-'.$akk->user_id,
+                'pemimpin_id' => $akk->user_id,
+                'kampus_id' => $kampus->kampus_id,
+                'nama_kelompok' => 'Kelompok Dari Anggota Direktori',
+                'is_active' => '1',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('kelompok_pemuridan', [
+            'nama_kelompok' => 'Kelompok Dari Anggota Direktori',
+            'pemimpin_id' => $akk->user_id,
+            'kampus_id' => $kampus->kampus_id,
+            'regio_id' => $surabaya->regio_id,
+            'is_active' => true,
+        ]);
+
+        $this->assertDatabaseHas('users', [
+            'user_id' => $akk->user_id,
+            'role' => 'pkk',
+        ]);
     }
 
     public function test_super_admin_can_manage_admin_users_from_pengguna_page(): void
@@ -553,6 +593,126 @@ class CrudPemuridanTest extends TestCase
 
         $this->assertDatabaseMissing('users', [
             'user_id' => $admin->user_id,
+        ]);
+    }
+
+    public function test_admin_editor_can_update_and_delete_tree_members_and_groups(): void
+    {
+        $surabaya = Regio::query()->where('nama_regio', 'Surabaya')->firstOrFail();
+        $admin = User::query()->create([
+            'username' => 'admin_tree_edit_test',
+            'password' => 'password',
+            'nama_lengkap' => 'Admin Tree Edit Test',
+            'role' => 'admin',
+            'admin_tipe' => 'editor',
+            'regio_id' => $surabaya->regio_id,
+            'is_active' => true,
+        ]);
+        $kampus = Kampus::query()->create([
+            'nama_kampus' => 'Kampus Tree Edit Test',
+            'singkatan' => 'KTET',
+            'regio_id' => $surabaya->regio_id,
+            'is_active' => true,
+        ]);
+        $leader = User::query()->create([
+            'username' => 'leader_tree_edit_test',
+            'password' => 'password',
+            'nama_lengkap' => 'Leader Tree Edit Test',
+            'role' => 'pkk',
+            'kampus_id' => $kampus->kampus_id,
+            'regio_id' => $surabaya->regio_id,
+            'is_active' => true,
+        ]);
+        $group = KelompokPemuridan::query()->create([
+            'nama_kelompok' => 'Kelompok Tree Edit Test',
+            'kampus_id' => $kampus->kampus_id,
+            'regio_id' => $surabaya->regio_id,
+            'pemimpin_id' => $leader->user_id,
+            'is_active' => true,
+        ]);
+        $member = User::query()->create([
+            'username' => 'member_tree_edit_test',
+            'password' => 'password',
+            'nama_lengkap' => 'Member Tree Edit Test',
+            'role' => 'akk',
+            'kampus_id' => $kampus->kampus_id,
+            'regio_id' => $surabaya->regio_id,
+            'pkk_id' => $leader->user_id,
+            'kelompok_id' => $group->kelompok_id,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('dashboard.pohon'))
+            ->assertOk()
+            ->assertSee('data-tree-v2-action-do="edit_member"', false)
+            ->assertSee('data-tree-v2-action-do="delete_member"', false)
+            ->assertSee('data-tree-v2-action-do="edit_group"', false)
+            ->assertSee('data-tree-v2-action-do="delete_group"', false)
+            ->assertSee('data-person-id="'.$member->user_id.'"', false)
+            ->assertSee('data-group-id="'.$group->kelompok_id.'"', false);
+
+        $this->actingAs($admin)
+            ->put(route('dashboard.pohon.anggota.update', $member), [
+                '_modal_id' => 'tree-member-edit-modal',
+                '_tree_person_id' => $member->user_id,
+                'nama_lengkap' => 'Member Tree Updated Test',
+                'kampus_id' => $kampus->kampus_id,
+                'angkatan' => 2024,
+                'is_active' => '0',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('users', [
+            'user_id' => $member->user_id,
+            'nama_lengkap' => 'Member Tree Updated Test',
+            'kampus_id' => $kampus->kampus_id,
+            'regio_id' => $surabaya->regio_id,
+            'angkatan' => 2024,
+            'is_active' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->put(route('dashboard.pohon.kelompok.update', $group), [
+                '_modal_id' => 'tree-group-edit-modal',
+                '_tree_group_id' => $group->kelompok_id,
+                'nama_kelompok' => 'Kelompok Tree Updated Test',
+                'kampus_id' => $kampus->kampus_id,
+                'is_active' => '0',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('kelompok_pemuridan', [
+            'kelompok_id' => $group->kelompok_id,
+            'nama_kelompok' => 'Kelompok Tree Updated Test',
+            'kampus_id' => $kampus->kampus_id,
+            'regio_id' => $surabaya->regio_id,
+            'is_active' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('dashboard.pohon.kelompok.destroy', $group))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('kelompok_pemuridan', [
+            'kelompok_id' => $group->kelompok_id,
+        ]);
+        $this->assertDatabaseHas('users', [
+            'user_id' => $leader->user_id,
+            'role' => 'akk',
+        ]);
+        $this->assertDatabaseHas('users', [
+            'user_id' => $member->user_id,
+            'pkk_id' => null,
+            'kelompok_id' => null,
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('dashboard.pohon.anggota.destroy', $member))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('users', [
+            'user_id' => $member->user_id,
         ]);
     }
 
@@ -739,6 +899,12 @@ class CrudPemuridanTest extends TestCase
             'regio_id' => $surabaya->regio_id,
             'is_active' => true,
         ]);
+        $kampusLintas = Kampus::query()->create([
+            'nama_kampus' => 'Kampus Lintas Tree Test',
+            'singkatan' => 'KLT',
+            'regio_id' => $surabaya->regio_id,
+            'is_active' => true,
+        ]);
 
         $this->actingAs($admin)
             ->get(route('dashboard.pohon'))
@@ -802,6 +968,38 @@ class CrudPemuridanTest extends TestCase
             'user_id' => $pkk->user_id,
             'role' => 'pkk',
         ]);
+
+        $userCountBeforeCrossCampusGroup = User::query()->count();
+
+        $this->actingAs($admin)
+            ->post(route('dashboard.pohon.kelompok.store'), [
+                'pemimpin_id' => $pkk->user_id,
+                'kampus_id' => $kampusLintas->kampus_id,
+                'nama_kelompok' => 'Kelompok Lintas Kampus Tree Test',
+                'is_active' => '1',
+            ])
+            ->assertRedirect();
+
+        $this->assertSame($userCountBeforeCrossCampusGroup, User::query()->count());
+        $this->assertDatabaseHas('kelompok_pemuridan', [
+            'nama_kelompok' => 'Kelompok Lintas Kampus Tree Test',
+            'pemimpin_id' => $pkk->user_id,
+            'kampus_id' => $kampusLintas->kampus_id,
+            'regio_id' => $surabaya->regio_id,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('dashboard.kampus.tab', ['kampus' => $kampusLintas, 'tab' => 'pohon']))
+            ->assertOk()
+            ->assertSee('Anggota Kampus Tree Test')
+            ->assertSee('Kelompok Lintas Kampus Tree Test');
+
+        $this->actingAs($admin)
+            ->get(route('dashboard.kampus.tab', ['kampus' => $kampus, 'tab' => 'pohon']))
+            ->assertOk()
+            ->assertSee('Kelompok Anggota Kampus Tree Test')
+            ->assertDontSee('Kelompok Lintas Kampus Tree Test');
 
         $group = KelompokPemuridan::query()->where('nama_kelompok', 'Kelompok Anggota Kampus Tree Test')->firstOrFail();
 
