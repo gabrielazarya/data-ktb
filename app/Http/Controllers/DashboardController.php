@@ -3,9 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Kampus;
+use App\Models\KategoriJurusan;
+use App\Models\KelompokPemuridan;
+use App\Models\Regio;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
@@ -35,9 +39,59 @@ class DashboardController extends Controller
         return $this->show('akk');
     }
 
-    public function kampus(): View
+    public function profile(): View
     {
-        return $this->showAdminSection('kampus');
+        /** @var User $user */
+        $user = Auth::user();
+
+        return view('dashboard.shell', $this->buildDashboardData((string) $user->role, $user, 'profil'));
+    }
+
+    public function kampus(): RedirectResponse
+    {
+        /** @var User|null $user */
+        $user = Auth::user();
+
+        abort_unless($user && $user->isAdmin(), 403);
+
+        return redirect()->route('admin.dashboard');
+    }
+
+    public function kampusDetail(Kampus $kampus): View
+    {
+        return $this->showKampusDetail($kampus);
+    }
+
+    public function kampusTab(Request $request, Kampus $kampus): View
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        abort_unless($user && $user->isAdmin(), 403);
+        $this->authorizeKampusDetailAccess($kampus, $user);
+
+        $kampusDetail = $this->campusDetailRow($kampus);
+        $tab = $request->query('tab') === 'anggota' ? 'anggota' : 'pohon';
+
+        if ($tab === 'anggota') {
+            return view('dashboard.partials.campus-members-tab', [
+                'selectedKampus' => $kampusDetail,
+                'selectedCampusMembers' => $this->selectedCampusMembers($kampusDetail),
+                'roleNames' => $this->roleNames(),
+            ]);
+        }
+
+        $treeGroups = $this->kampusTreeGroups($kampusDetail, $user);
+
+        return view('dashboard.partials.campus-tree-tab', [
+            'treeGroups' => $treeGroups,
+            'treeSearchNames' => $this->treeSearchNames($treeGroups),
+        ]);
+    }
+
+    public function regio(): View
+    {
+        return $this->showAdminSection('regio');
     }
 
     public function pengguna(): View
@@ -45,9 +99,9 @@ class DashboardController extends Controller
         return $this->showAdminSection('pengguna');
     }
 
-    public function pemuridan(): View
+    public function anggotaKtb(): View
     {
-        return $this->showAdminSection('pemuridan');
+        return $this->showAdminSection('anggota-ktb');
     }
 
     public function pohon(): View
@@ -71,72 +125,156 @@ class DashboardController extends Controller
         $user = Auth::user();
 
         abort_unless(in_array($user->role, ['super_admin', 'admin'], true), 403);
+        abort_if(in_array($activePage, ['regio', 'pengguna'], true) && ! $user->isSuperAdmin(), 403);
+        abort_if(in_array($activePage, ['kampus', 'anggota-ktb', 'pohon'], true) && $user->isSuperAdmin(), 403);
 
         return view('dashboard.shell', $this->buildDashboardData((string) $user->role, $user, $activePage));
+    }
+
+    private function showKampusDetail(Kampus $kampus): View
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        abort_unless($user && $user->isAdmin(), 403);
+        $this->authorizeKampusDetailAccess($kampus, $user);
+
+        $kampusDetail = $this->campusDetailRow($kampus);
+        $data = $this->buildDashboardData((string) $user->role, $user, 'kampus-detail');
+        $campusLabel = $kampusDetail->singkatan ?: $kampusDetail->nama_kampus;
+
+        $data['selectedKampus'] = $kampusDetail;
+        $data['selectedCampusMembers'] = $this->selectedCampusMembers($kampusDetail);
+        $data['selectedCampusGroups'] = $this->selectedCampusGroups($kampusDetail);
+        $selectedTreeGroups = $this->filterTreeGroupsByKampus($data['treeGroups'], $kampusDetail);
+        $data['treeGroups'] = $selectedTreeGroups;
+        $data['treeSearchNames'] = $this->treeSearchNames($selectedTreeGroups);
+        $data['dashboard'] = array_merge($data['dashboard'], [
+            'title' => $campusLabel,
+            'eyebrow' => 'Detail Kampus',
+            'subtitle' => 'Pohon pemuridan khusus '.$kampusDetail->nama_kampus.'.',
+        ]);
+
+        return view('dashboard.shell', $data);
     }
 
     private function buildDashboardData(string $role, User $user, string $activePage): array
     {
         $canSeeAdminData = in_array($role, ['super_admin', 'admin'], true);
-        $stats = $canSeeAdminData ? $this->adminStats() : [];
-        $campusRoleGroups = $canSeeAdminData ? $this->campusRoleGroups() : collect();
-        $treeGroups = $canSeeAdminData
-            ? $campusRoleGroups->filter(fn (array $group) => $group['pkk']->isNotEmpty() || $group['akk']->isNotEmpty())->values()
-            : collect();
+        $isRegioScoped = $canSeeAdminData && ! $user->isSuperAdmin();
+        $regioScopeId = $isRegioScoped ? $user->regio_id : null;
+        $stats = $canSeeAdminData ? $this->adminStats($regioScopeId, $isRegioScoped) : [];
+        $campusRoleGroups = $canSeeAdminData ? $this->campusRoleGroups($regioScopeId, $isRegioScoped) : collect();
+        $treeGroups = $canSeeAdminData ? $campusRoleGroups : collect();
 
         return [
             'activePage' => $activePage,
             'dashboard' => $this->dashboardConfig($role, $user, $activePage),
             'metrics' => $canSeeAdminData
-                ? $this->adminMetrics($stats)
+                ? ($user->isSuperAdmin() ? $this->superAdminMetrics($stats) : $this->adminMetrics($stats))
                 : $this->personalMetrics($user),
             'canSeeAdminData' => $canSeeAdminData,
+            'canManageData' => $this->canManageData($user),
             'roleCounts' => $stats['roleCounts'] ?? $this->blankRoleCounts(),
-            'campusSummaries' => $canSeeAdminData ? $this->campusSummaries() : collect(),
-            'userRows' => $canSeeAdminData ? $this->userRows() : collect(),
+            'campusSummaries' => $canSeeAdminData ? $this->campusSummaries($regioScopeId, $isRegioScoped) : collect(),
+            'regioRows' => $canSeeAdminData ? $this->regioRows($regioScopeId, $isRegioScoped) : collect(),
+            'userRows' => $canSeeAdminData ? $this->userRows($regioScopeId, $isRegioScoped) : collect(),
+            'memberRows' => $canSeeAdminData ? $this->memberRows($regioScopeId, $isRegioScoped) : collect(),
             'campusRoleGroups' => $campusRoleGroups,
             'treeGroups' => $treeGroups,
             'treeSearchNames' => $canSeeAdminData ? $this->treeSearchNames($treeGroups) : collect(),
+            'campusOptions' => $canSeeAdminData ? $this->campusOptions($regioScopeId, $isRegioScoped) : collect(),
+            'regioOptions' => $canSeeAdminData ? $this->regioOptions($regioScopeId, $isRegioScoped) : collect(),
+            'kategoriJurusanOptions' => $this->kategoriJurusanOptions(),
+            'selectedKampus' => null,
+            'selectedCampusMembers' => collect(),
+            'selectedCampusGroups' => collect(),
         ];
     }
 
-    private function adminStats(): array
+    private function adminStats(?int $regioId, bool $isRegioScoped): array
     {
-        $totalUsers = User::query()->count();
-        $activeUsers = User::query()->where('is_active', true)->count();
-        $roleCounts = User::query()
+        $userQuery = $this->applyRegioScope(User::query(), $regioId, $isRegioScoped);
+        $totalUsers = (clone $userQuery)->count();
+        $activeUsers = (clone $userQuery)->where('is_active', true)->count();
+        $roleCounts = (clone $userQuery)
             ->selectRaw('role, COUNT(*) as total')
             ->groupBy('role')
             ->pluck('total', 'role')
             ->map(fn ($total) => (int) $total)
             ->all();
+        $activeRoleCounts = (clone $userQuery)
+            ->where('is_active', true)
+            ->selectRaw('role, COUNT(*) as total')
+            ->groupBy('role')
+            ->pluck('total', 'role')
+            ->map(fn ($total) => (int) $total)
+            ->all();
+        $campusQuery = $this->applyRegioScope(Kampus::query(), $regioId, $isRegioScoped);
+        $groupQuery = $this->applyRegioScope(KelompokPemuridan::query(), $regioId, $isRegioScoped);
+        $regioQuery = $this->applyRegioScope(Regio::query(), $regioId, $isRegioScoped);
 
         return [
             'totalUsers' => $totalUsers,
             'activeUsers' => $activeUsers,
             'inactiveUsers' => max(0, $totalUsers - $activeUsers),
-            'activeCampuses' => Kampus::query()->where('is_active', true)->count(),
-            'targetPkk' => User::query()
-                ->where('role', 'pkk')
-                ->where('is_target', true)
-                ->count(),
+            'totalCampuses' => (clone $campusQuery)->count(),
+            'activeCampuses' => (clone $campusQuery)->where('is_active', true)->count(),
+            'totalGroups' => (clone $groupQuery)->count(),
+            'activeGroups' => (clone $groupQuery)->where('is_active', true)->count(),
+            'totalRegios' => (clone $regioQuery)->count(),
+            'activeRegios' => (clone $regioQuery)->where('is_active', true)->count(),
             'roleCounts' => array_merge($this->blankRoleCounts(), $roleCounts),
+            'activeRoleCounts' => array_merge($this->blankRoleCounts(), $activeRoleCounts),
+        ];
+    }
+
+    private function superAdminMetrics(array $stats): array
+    {
+        return [
+            [
+                'label' => 'Admin',
+                'value' => $this->formatNumber($stats['roleCounts']['admin']),
+                'hint' => $this->formatNumber($stats['activeRoleCounts']['admin']).' akun admin aktif',
+                'tone' => 'primary',
+            ],
+            [
+                'label' => 'Regio Aktif',
+                'value' => $this->formatNumber($stats['activeRegios']),
+                'hint' => $this->formatNumber($stats['totalRegios']).' total regio pelayanan',
+                'tone' => 'success',
+            ],
+            [
+                'label' => 'Super Admin',
+                'value' => $this->formatNumber($stats['roleCounts']['super_admin']),
+                'hint' => 'Akses pusat sistem',
+                'tone' => 'info',
+            ],
+            [
+                'label' => 'Akun Aktif',
+                'value' => $this->formatNumber($stats['activeUsers']),
+                'hint' => $this->formatNumber($stats['totalUsers']).' total akun sistem',
+                'tone' => 'warning',
+            ],
         ];
     }
 
     private function adminMetrics(array $stats): array
     {
+        $memberUsers = $stats['roleCounts']['pkk'] + $stats['roleCounts']['akk'];
+        $activeMemberUsers = $stats['activeRoleCounts']['pkk'] + $stats['activeRoleCounts']['akk'];
+
         return [
             [
-                'label' => 'Pengguna Aktif',
-                'value' => $this->formatNumber($stats['activeUsers']),
-                'hint' => $this->formatNumber($stats['totalUsers']).' total akun',
+                'label' => 'Anggota KTB',
+                'value' => $this->formatNumber($memberUsers),
+                'hint' => $this->formatNumber($activeMemberUsers).' anggota aktif',
                 'tone' => 'primary',
             ],
             [
                 'label' => 'PKK',
                 'value' => $this->formatNumber($stats['roleCounts']['pkk']),
-                'hint' => $this->formatNumber($stats['targetPkk']).' bertanda target',
+                'hint' => 'Akun pendamping KTB',
                 'tone' => 'success',
             ],
             [
@@ -146,9 +284,9 @@ class DashboardController extends Controller
                 'tone' => 'info',
             ],
             [
-                'label' => 'Kampus Aktif',
-                'value' => $this->formatNumber($stats['activeCampuses']),
-                'hint' => $this->formatNumber($stats['inactiveUsers']).' akun nonaktif',
+                'label' => 'Kelompok',
+                'value' => $this->formatNumber($stats['totalGroups']),
+                'hint' => $this->formatNumber($stats['activeGroups']).' kelompok aktif',
                 'tone' => 'warning',
             ],
         ];
@@ -178,15 +316,16 @@ class DashboardController extends Controller
             [
                 'label' => 'Angkatan',
                 'value' => $user->angkatan ? (string) $user->angkatan : '-',
-                'hint' => $user->is_target ? 'PKK target' : 'Data profil',
+                'hint' => 'Data profil',
                 'tone' => 'warning',
             ],
         ];
     }
 
-    private function campusSummaries()
+    private function campusSummaries(?int $regioId, bool $isRegioScoped)
     {
-        return Kampus::query()
+        return $this->applyRegioScope(Kampus::query(), $regioId, $isRegioScoped)
+            ->with('regio')
             ->withCount([
                 'users as total_users',
                 'users as active_users' => fn ($query) => $query->where('is_active', true),
@@ -198,84 +337,267 @@ class DashboardController extends Controller
             ->get();
     }
 
-    private function userRows()
+    private function regioRows(?int $regioId, bool $isRegioScoped)
     {
-        return User::query()
-            ->with('kampus')
+        return $this->applyRegioScope(Regio::query(), $regioId, $isRegioScoped)
+            ->withCount([
+                'users as total_users',
+                'users as active_users' => fn ($query) => $query->where('is_active', true),
+                'users as admin_users' => fn ($query) => $query->where('role', 'admin'),
+                'users as pkk_users' => fn ($query) => $query->where('role', 'pkk'),
+                'users as akk_users' => fn ($query) => $query->where('role', 'akk'),
+            ])
+            ->orderByDesc('active_users')
+            ->orderBy('nama_regio')
+            ->get();
+    }
+
+    private function userRows(?int $regioId, bool $isRegioScoped)
+    {
+        return $this->applyRegioScope(User::query(), $regioId, $isRegioScoped)
+            ->with(['kampus', 'regio', 'kategoriJurusan', 'pkkLeader.kampus'])
+            ->whereIn('role', ['admin', 'pkk', 'akk'])
             ->orderByDesc('created_at')
             ->get();
     }
 
-    private function campusRoleGroups()
+    private function memberRows(?int $regioId, bool $isRegioScoped)
     {
-        $campuses = Kampus::query()
-            ->with(['users' => fn ($query) => $query
-                ->whereIn('role', ['pkk', 'akk'])
-                ->orderBy('nama_lengkap')])
-            ->orderBy('nama_kampus')
-            ->get()
-            ->map(function (Kampus $kampus): array {
-                $pkkUsers = $kampus->users->where('role', 'pkk')->values();
-                $akkUsers = $kampus->users->where('role', 'akk')->values();
+        return $this->applyRegioScope(User::query(), $regioId, $isRegioScoped)
+            ->with(['kampus', 'regio', 'kategoriJurusan', 'pkkLeader.kampus', 'kelompokPemuridan'])
+            ->whereIn('role', ['akk', 'pkk'])
+            ->orderByDesc('created_at')
+            ->get();
+    }
 
-                return [
-                    'id' => 'kampus-'.$kampus->kampus_id,
-                    'name' => $kampus->nama_kampus,
-                    'short' => $kampus->singkatan ?: '-',
-                    'is_active' => $kampus->is_active,
-                    'pkk' => $pkkUsers,
-                    'akk' => $akkUsers,
-                    'branches' => $this->buildPkkBranches($pkkUsers, $akkUsers),
-                    'unassigned_akk' => $pkkUsers->isEmpty() ? $akkUsers : collect(),
-                    'total' => $pkkUsers->count() + $akkUsers->count(),
-                ];
-            });
-
-        $unassignedUsers = User::query()
-            ->whereNull('kampus_id')
-            ->whereIn('role', ['pkk', 'akk'])
+    private function campusRoleGroups(?int $regioId, bool $isRegioScoped)
+    {
+        $allPeople = $this->applyRegioScope(User::query(), $regioId, $isRegioScoped)
+            ->with(['kampus', 'regio', 'kategoriJurusan', 'pkkLeader.kampus', 'kelompokPemuridan'])
+            ->whereIn('role', ['akk', 'pkk'])
             ->orderBy('nama_lengkap')
             ->get();
 
-        if ($unassignedUsers->isNotEmpty()) {
-            $pkkUsers = $unassignedUsers->where('role', 'pkk')->values();
-            $akkUsers = $unassignedUsers->where('role', 'akk')->values();
+        $allGroups = $this->applyRegioScope(KelompokPemuridan::query(), $regioId, $isRegioScoped)
+            ->with(['kampus.regio', 'regio', 'pemimpin.kampus'])
+            ->orderBy('nama_kelompok')
+            ->get();
+
+        $campuses = $this->applyRegioScope(Kampus::query(), $regioId, $isRegioScoped)
+            ->with('regio')
+            ->orderBy('nama_kampus')
+            ->get()
+            ->map(function (Kampus $kampus) use ($allPeople, $allGroups): array {
+                $pemuridanGroups = $allGroups
+                    ->where('kampus_id', $kampus->kampus_id)
+                    ->values();
+                $groupIds = $pemuridanGroups->pluck('kelompok_id')->unique();
+                $personIds = $allPeople
+                    ->where('kampus_id', $kampus->kampus_id)
+                    ->pluck('user_id')
+                    ->merge($pemuridanGroups->pluck('pemimpin_id'))
+                    ->merge($allPeople->whereIn('kelompok_id', $groupIds)->pluck('user_id'))
+                    ->filter()
+                    ->unique()
+                    ->values();
+                $people = $allPeople->whereIn('user_id', $personIds)->values();
+                $leaderIds = $pemuridanGroups->pluck('pemimpin_id')->unique();
+
+                return [
+                    'id' => 'kampus-'.$kampus->kampus_id,
+                    'campus_id' => $kampus->kampus_id,
+                    'name' => $kampus->nama_kampus,
+                    'short' => $kampus->singkatan ?: '-',
+                    'is_active' => $kampus->is_active,
+                    'pkk' => $people->whereIn('user_id', $leaderIds)->values(),
+                    'akk' => $people,
+                    'groups' => $pemuridanGroups,
+                    'branches' => $this->buildPersonTree($people, $pemuridanGroups),
+                    'unassigned_akk' => collect(),
+                    'groups_count' => $pemuridanGroups->count(),
+                    'total' => $people->count(),
+                ];
+            });
+
+        $unassignedPeople = $allPeople
+            ->whereNull('kampus_id')
+            ->values();
+        $unassignedPemuridanGroups = $allGroups
+            ->whereNull('kampus_id')
+            ->values();
+        $unassignedGroupIds = $unassignedPemuridanGroups->pluck('kelompok_id')->unique();
+        $unassignedPersonIds = $unassignedPeople
+            ->pluck('user_id')
+            ->merge($unassignedPemuridanGroups->pluck('pemimpin_id'))
+            ->merge($allPeople->whereIn('kelompok_id', $unassignedGroupIds)->pluck('user_id'))
+            ->filter()
+            ->unique()
+            ->values();
+        $unassignedTreePeople = $allPeople->whereIn('user_id', $unassignedPersonIds)->values();
+
+        if ($unassignedPeople->isNotEmpty() || $unassignedPemuridanGroups->isNotEmpty()) {
+            $leaderIds = $unassignedPemuridanGroups->pluck('pemimpin_id')->unique();
 
             $campuses->push([
                 'id' => 'kampus-tanpa-kampus',
+                'campus_id' => null,
                 'name' => 'Tanpa Kampus',
                 'short' => '-',
                 'is_active' => false,
-                'pkk' => $pkkUsers,
-                'akk' => $akkUsers,
-                'branches' => $this->buildPkkBranches($pkkUsers, $akkUsers),
-                'unassigned_akk' => $pkkUsers->isEmpty() ? $akkUsers : collect(),
-                'total' => $pkkUsers->count() + $akkUsers->count(),
+                'pkk' => $unassignedTreePeople->whereIn('user_id', $leaderIds)->values(),
+                'akk' => $unassignedTreePeople,
+                'groups' => $unassignedPemuridanGroups,
+                'branches' => $this->buildPersonTree($unassignedTreePeople, $unassignedPemuridanGroups),
+                'unassigned_akk' => collect(),
+                'groups_count' => $unassignedPemuridanGroups->count(),
+                'total' => $unassignedTreePeople->count(),
             ]);
         }
 
         return $campuses;
     }
 
-    private function buildPkkBranches($pkkUsers, $akkUsers)
+    private function campusOptions(?int $regioId, bool $isRegioScoped)
     {
-        if ($pkkUsers->isEmpty()) {
+        return $this->applyRegioScope(Kampus::query(), $regioId, $isRegioScoped)
+            ->with('regio')
+            ->orderBy('nama_kampus')
+            ->get();
+    }
+
+    private function campusDetailRow(Kampus $kampus): Kampus
+    {
+        return Kampus::query()
+            ->with('regio')
+            ->withCount([
+                'users as total_users',
+                'users as active_users' => fn ($query) => $query->where('is_active', true),
+                'users as pkk_users' => fn ($query) => $query->where('role', 'pkk'),
+                'users as akk_users' => fn ($query) => $query->where('role', 'akk'),
+                'kelompokPemuridan as groups_count',
+                'kelompokPemuridan as active_groups_count' => fn ($query) => $query->where('is_active', true),
+            ])
+            ->findOrFail($kampus->getKey());
+    }
+
+    private function selectedCampusMembers(Kampus $kampus)
+    {
+        $groups = KelompokPemuridan::query()
+            ->where('kampus_id', $kampus->kampus_id)
+            ->get(['kelompok_id', 'pemimpin_id']);
+        $groupIds = $groups->pluck('kelompok_id')->unique();
+        $personIds = User::query()
+            ->whereIn('role', ['akk', 'pkk'])
+            ->where(function ($query) use ($kampus, $groups, $groupIds) {
+                $query
+                    ->where('kampus_id', $kampus->kampus_id)
+                    ->orWhereIn('user_id', $groups->pluck('pemimpin_id')->filter()->unique())
+                    ->orWhereIn('kelompok_id', $groupIds);
+            })
+            ->pluck('user_id');
+
+        return User::query()
+            ->with(['pkkLeader', 'kelompokPemuridan'])
+            ->whereIn('user_id', $personIds)
+            ->whereIn('role', ['akk', 'pkk'])
+            ->orderBy('nama_lengkap')
+            ->get();
+    }
+
+    private function selectedCampusGroups(Kampus $kampus)
+    {
+        return KelompokPemuridan::query()
+            ->with('pemimpin')
+            ->withCount('anggota')
+            ->where('kampus_id', $kampus->kampus_id)
+            ->orderBy('nama_kelompok')
+            ->get();
+    }
+
+    private function kampusTreeGroups(Kampus $kampus, User $user)
+    {
+        $data = $this->buildDashboardData((string) $user->role, $user, 'kampus-detail');
+
+        return $this->filterTreeGroupsByKampus($data['treeGroups'], $kampus);
+    }
+
+    private function filterTreeGroupsByKampus($treeGroups, Kampus $kampus)
+    {
+        return $treeGroups
+            ->filter(fn (array $group): bool => (int) ($group['campus_id'] ?? 0) === (int) $kampus->kampus_id)
+            ->values();
+    }
+
+    private function roleNames(): array
+    {
+        return [
+            'super_admin' => 'Super Admin',
+            'admin' => 'Admin',
+            'pkk' => 'PKK',
+            'akk' => 'AKK',
+        ];
+    }
+
+    private function regioOptions(?int $regioId, bool $isRegioScoped)
+    {
+        return $this->applyRegioScope(Regio::query(), $regioId, $isRegioScoped)
+            ->orderByDesc('is_active')
+            ->orderBy('nama_regio')
+            ->get();
+    }
+
+    private function buildPersonTree($people, $groupRows)
+    {
+        if ($people->isEmpty()) {
             return collect();
         }
 
-        $branches = $pkkUsers->map(fn (User $pkk): array => [
-            'pkk' => $pkk,
-            'akk' => collect(),
-        ]);
+        $groupIds = $groupRows->pluck('kelompok_id');
+        $rootPeople = $people
+            ->filter(fn (User $person): bool => blank($person->kelompok_id) || ! $groupIds->contains($person->kelompok_id))
+            ->values();
 
-        foreach ($akkUsers->values() as $index => $akk) {
-            $branchIndex = $index % $branches->count();
-            $branch = $branches->get($branchIndex);
-            $branch['akk']->push($akk);
-            $branches->put($branchIndex, $branch);
+        return $rootPeople
+            ->map(fn (User $person): array => $this->buildPersonNode($person, $people, $groupRows))
+            ->values();
+    }
+
+    private function buildPersonNode(User $person, $people, $groupRows, array $trail = []): array
+    {
+        if (in_array($person->user_id, $trail, true)) {
+            return [
+                'person' => $person,
+                'is_pkk' => false,
+                'groups' => collect(),
+            ];
         }
 
-        return $branches->values();
+        $nextTrail = [...$trail, $person->user_id];
+        $groups = $groupRows
+            ->where('pemimpin_id', $person->user_id)
+            ->map(function (KelompokPemuridan $group) use ($people, $groupRows, $person, $nextTrail): array {
+                $members = $people
+                    ->where('kelompok_id', $group->kelompok_id)
+                    ->reject(fn (User $member): bool => $member->user_id === $person->user_id)
+                    ->values()
+                    ->map(fn (User $member): array => $this->buildPersonNode($member, $people, $groupRows, $nextTrail))
+                    ->values();
+
+                return [
+                    'id' => $group->kelompok_id,
+                    'name' => $group->nama_kelompok,
+                    'is_legacy' => false,
+                    'model' => $group,
+                    'members' => $members,
+                ];
+            })
+            ->values();
+
+        return [
+            'person' => $person,
+            'is_pkk' => $groups->isNotEmpty(),
+            'groups' => $groups,
+        ];
     }
 
     private function treeSearchNames($treeGroups)
@@ -284,13 +606,7 @@ class DashboardController extends Controller
             ->flatMap(function (array $group): array {
                 $names = [$group['name'], $group['short'], 'PKK '.$group['name'], 'AKK '.$group['name']];
 
-                foreach ($group['pkk'] as $row) {
-                    $names[] = $row->nama_lengkap;
-                }
-
-                foreach ($group['akk'] as $row) {
-                    $names[] = $row->nama_lengkap;
-                }
+                $names = array_merge($names, $this->treeNodeSearchNames($group['branches']));
 
                 return $names;
             })
@@ -300,20 +616,43 @@ class DashboardController extends Controller
             ->values();
     }
 
+    private function kategoriJurusanOptions()
+    {
+        return KategoriJurusan::query()
+            ->orderBy('nama_kategori')
+            ->get();
+    }
+
+    private function treeNodeSearchNames($nodes): array
+    {
+        return $nodes
+            ->flatMap(function (array $node): array {
+                $names = [$node['person']->nama_lengkap];
+
+                foreach ($node['groups'] as $group) {
+                    $names[] = $group['name'];
+                    $names = array_merge($names, $this->treeNodeSearchNames($group['members']));
+                }
+
+                return $names;
+            })
+            ->all();
+    }
+
     private function dashboardConfig(string $role, User $user, string $activePage): array
     {
         $config = match ($role) {
             'super_admin' => [
                 'title' => 'Dashboard Super Admin',
                 'eyebrow' => 'Kontrol sistem',
-                'subtitle' => 'Ringkasan akun, kampus, dan akses Sistem KTB.',
+                'subtitle' => 'Kelola akses admin dan struktur regio Sistem KTB.',
                 'roleLabel' => 'Super Admin',
                 'route' => 'superadmin.dashboard',
             ],
             'admin' => [
                 'title' => 'Dashboard Admin',
                 'eyebrow' => $user->admin_tipe ? 'Admin '.ucfirst($user->admin_tipe) : 'Admin',
-                'subtitle' => 'Ringkasan data pengguna dan kampus untuk pengelolaan KTB.',
+                'subtitle' => 'Pantau anggota, kampus, dan kelompok KTB di '.($user->regio?->nama_regio ?: 'regio Anda').'.',
                 'roleLabel' => 'Admin',
                 'route' => 'admin.dashboard',
             ],
@@ -346,20 +685,30 @@ class DashboardController extends Controller
                 'eyebrow' => 'Data Kampus',
                 'subtitle' => 'Daftar kampus dan ringkasan pengguna Sistem KTB per kampus.',
             ]),
+            'regio' => array_merge($config, [
+                'title' => 'Regio',
+                'eyebrow' => 'Data Regio',
+                'subtitle' => 'Daftar wilayah pelayanan dan ringkasan anggota Sistem KTB per regio.',
+            ]),
             'pengguna' => array_merge($config, [
                 'title' => 'Pengguna',
                 'eyebrow' => 'Data Pengguna',
-                'subtitle' => 'Daftar akun yang terdaftar di Sistem KTB.',
+                'subtitle' => 'Daftar akun admin, PKK, dan AKK Sistem KTB.',
             ]),
-            'pemuridan' => array_merge($config, [
-                'title' => 'AKK dan PKK per Kampus',
-                'eyebrow' => 'Data Pemuridan',
-                'subtitle' => 'Daftar AKK dan PKK yang dikelompokkan berdasarkan kampus.',
+            'profil' => array_merge($config, [
+                'title' => 'Profil',
+                'eyebrow' => 'Akun Pengguna',
+                'subtitle' => 'Detail profil, data pribadi, dan pengaturan password akun Anda.',
+            ]),
+            'anggota-ktb' => array_merge($config, [
+                'title' => 'Anggota KTB',
+                'eyebrow' => 'Data Anggota',
+                'subtitle' => 'Daftar akun AKK dan PKK yang terdaftar di Sistem KTB.',
             ]),
             'pohon' => array_merge($config, [
                 'title' => 'Pohon Pemuridan',
                 'eyebrow' => 'Peta Pemuridan',
-                'subtitle' => 'Visualisasi PKK dan AKK berdasarkan kampus.',
+                'subtitle' => 'Visualisasi AKK, PKK, dan kelompok berdasarkan kampus.',
             ]),
             default => $config,
         };
@@ -373,6 +722,30 @@ class DashboardController extends Controller
             'pkk' => 0,
             'akk' => 0,
         ];
+    }
+
+    private function canManageData(User $user): bool
+    {
+        return $user->isSuperAdmin() || $user->isAdminEditor();
+    }
+
+    private function authorizeKampusDetailAccess(Kampus $kampus, User $user): void
+    {
+        abort_unless(
+            filled($user->regio_id) && (int) $kampus->regio_id === (int) $user->regio_id,
+            403
+        );
+    }
+
+    private function applyRegioScope($query, ?int $regioId, bool $isRegioScoped)
+    {
+        if (! $isRegioScoped) {
+            return $query;
+        }
+
+        return filled($regioId)
+            ? $query->where('regio_id', $regioId)
+            : $query->whereRaw('1 = 0');
     }
 
     private function routeForRole(string $role): string

@@ -13,6 +13,7 @@ class Kampus extends Model
     protected $primaryKey = 'kampus_id';
 
     protected $fillable = [
+        'regio_id',
         'nama_kampus',
         'singkatan',
         'is_active',
@@ -31,6 +32,16 @@ class Kampus extends Model
     public function users()
     {
         return $this->hasMany(User::class, 'kampus_id', 'kampus_id');
+    }
+
+    public function regio()
+    {
+        return $this->belongsTo(Regio::class, 'regio_id', 'regio_id');
+    }
+
+    public function kelompokPemuridan()
+    {
+        return $this->hasMany(KelompokPemuridan::class, 'kampus_id', 'kampus_id');
     }
 
     /**

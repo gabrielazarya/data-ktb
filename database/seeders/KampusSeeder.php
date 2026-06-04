@@ -15,6 +15,9 @@ class KampusSeeder extends Seeder
     public function run(): void
     {
         $now = Carbon::now();
+        $surabayaId = DB::table('regios')
+            ->where('nama_regio', 'Surabaya')
+            ->value('regio_id');
 
         $kampusList = [
             ['nama_kampus' => 'Telkom University Surabaya',                            'singkatan' => 'TUS'],
@@ -34,13 +37,16 @@ class KampusSeeder extends Seeder
         ];
 
         foreach ($kampusList as $kampus) {
-            DB::table('kampus')->insertOrIgnore([
-                'nama_kampus' => $kampus['nama_kampus'],
-                'singkatan'   => $kampus['singkatan'],
-                'is_active'   => true,
-                'created_at'  => $now,
-                'updated_at'  => $now,
-            ]);
+            DB::table('kampus')->updateOrInsert(
+                ['nama_kampus' => $kampus['nama_kampus']],
+                [
+                    'regio_id' => $surabayaId,
+                    'singkatan' => $kampus['singkatan'],
+                    'is_active' => true,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]
+            );
         }
     }
 }

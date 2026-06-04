@@ -38,9 +38,6 @@ return new class extends Migration
             // Data tambahan
             $table->string('foto_profil', 256)->nullable();
 
-            // Label klasifikasi target/non-target (khusus PKK, diset oleh Admin)
-            $table->boolean('is_target')->default(false);
-
             // Untuk Admin: klasifikasi akses (pelihat = read only, editor = full edit)
             $table->enum('admin_tipe', ['pelihat', 'editor'])->nullable();
 

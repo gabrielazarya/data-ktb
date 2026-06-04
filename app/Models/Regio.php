@@ -29,4 +29,14 @@ class Regio extends Model
     {
         return $this->hasMany(User::class, 'regio_id', 'regio_id');
     }
+
+    public function kampus()
+    {
+        return $this->hasMany(Kampus::class, 'regio_id', 'regio_id');
+    }
+
+    public function kelompokPemuridan()
+    {
+        return $this->hasMany(KelompokPemuridan::class, 'regio_id', 'regio_id');
+    }
 }

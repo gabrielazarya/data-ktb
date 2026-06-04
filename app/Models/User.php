@@ -50,8 +50,9 @@ class User extends Authenticatable
         'kategori_jurusan_id',
         'angkatan',
         'role',
+        'pkk_id',
+        'kelompok_id',
         'foto_profil',
-        'is_target',
         'admin_tipe',
         'is_active',
     ];
@@ -76,7 +77,6 @@ class User extends Authenticatable
         return [
             'tanggal_lahir' => 'date',
             'password'      => 'hashed',
-            'is_target'     => 'boolean',
             'is_active'     => 'boolean',
         ];
     }
@@ -141,5 +141,31 @@ class User extends Authenticatable
     public function kategoriJurusan()
     {
         return $this->belongsTo(KategoriJurusan::class, 'kategori_jurusan_id', 'kategori_jurusan_id');
+    }
+
+    /**
+     * PKK yang memimpin AKK ini
+     */
+    public function pkkLeader()
+    {
+        return $this->belongsTo(User::class, 'pkk_id', 'user_id');
+    }
+
+    public function kelompokPemuridan()
+    {
+        return $this->belongsTo(KelompokPemuridan::class, 'kelompok_id', 'kelompok_id');
+    }
+
+    public function kelompokDipimpin()
+    {
+        return $this->hasMany(KelompokPemuridan::class, 'pemimpin_id', 'user_id');
+    }
+
+    /**
+     * Daftar AKK yang dipimpin oleh PKK ini
+     */
+    public function akkMembers()
+    {
+        return $this->hasMany(User::class, 'pkk_id', 'user_id');
     }
 }
