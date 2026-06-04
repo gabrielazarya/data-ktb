@@ -26,11 +26,12 @@ class User extends Authenticatable
     protected $username = 'username';
 
     /**
-     * Override: field identifier untuk autentikasi Laravel
+     * Override: field identifier untuk session (primary key)
+     * CATATAN: Ini TIDAK mengubah field login — login tetap pakai 'username'
      */
-    public function getAuthIdentifierName(): string
+    public function getAuthIdentifier()
     {
-        return 'user_id';
+        return $this->getAttribute($this->primaryKey); // user_id
     }
 
 
