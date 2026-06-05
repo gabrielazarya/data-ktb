@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             RegioSeeder::class,           // 2. Master regio (Surabaya, Malang)
             KategoriJurusanSeeder::class, // 3. Master 10 kategori jurusan
             SuperAdminSeeder::class,      // 4. Akun Super Admin
+            DummyPemuridanSeeder::class,
         ]);
     }
 }
