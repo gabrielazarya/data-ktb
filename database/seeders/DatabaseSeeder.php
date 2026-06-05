@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             KampusSeeder::class,          // 2. Master kampus
             KategoriJurusanSeeder::class, // 3. Master 10 kategori jurusan
             SuperAdminSeeder::class,      // 4. Akun Super Admin
+            DummyPemuridanSeeder::class,
         ]);
     }
 }

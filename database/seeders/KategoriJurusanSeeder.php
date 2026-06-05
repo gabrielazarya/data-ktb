@@ -27,6 +27,6 @@ class KategoriJurusanSeeder extends Seeder
             $cat['updated_at'] = now();
         }
 
-        DB::table('kategori_jurusan')->insert($categories);
+        DB::table('kategori_jurusan')->insertOrIgnore($categories);
     }
 }
