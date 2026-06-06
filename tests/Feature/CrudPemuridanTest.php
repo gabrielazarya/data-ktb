@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Kampus;
 use App\Models\KategoriJurusan;
 use App\Models\KelompokPemuridan;
+use App\Models\LaporanPertemuanKelompok;
 use App\Models\Regio;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -233,6 +234,59 @@ class CrudPemuridanTest extends TestCase
             'regio_id' => $malang->regio_id,
             'is_active' => true,
         ]);
+        $pkkTabSurabaya = User::query()->create([
+            'username' => 'pkk_tab_scope_surabaya',
+            'password' => 'password',
+            'nama_lengkap' => 'PKK Tab Scope Surabaya',
+            'role' => 'pkk',
+            'kampus_id' => $kampusSurabaya->kampus_id,
+            'regio_id' => $surabaya->regio_id,
+            'is_active' => true,
+        ]);
+        $groupTabSurabaya = KelompokPemuridan::query()->create([
+            'nama_kelompok' => 'Kelompok Tab Scope Surabaya',
+            'kampus_id' => $kampusSurabaya->kampus_id,
+            'regio_id' => $surabaya->regio_id,
+            'pemimpin_id' => $pkkTabSurabaya->user_id,
+            'is_active' => true,
+        ]);
+        $memberSurabaya->forceFill([
+            'pkk_id' => $pkkTabSurabaya->user_id,
+            'kelompok_id' => $groupTabSurabaya->kelompok_id,
+        ])->save();
+        LaporanPertemuanKelompok::query()->create([
+            'kelompok_id' => $groupTabSurabaya->kelompok_id,
+            'pkk_id' => $pkkTabSurabaya->user_id,
+            'tanggal_pertemuan' => '2026-06-06',
+            'pertemuan_ke' => 2,
+            'bahan' => 'Bahan Laporan Tab Scope',
+            'ringkasan' => 'Ringkasan laporan tab scope',
+            'anggota_hadir' => [$memberSurabaya->user_id],
+            'jumlah_hadir' => 1,
+        ]);
+        $pkkTabOtherCampus = User::query()->create([
+            'username' => 'pkk_tab_scope_other',
+            'password' => 'password',
+            'nama_lengkap' => 'PKK Tab Scope Other Campus',
+            'role' => 'pkk',
+            'kampus_id' => $kampusSurabayaOther->kampus_id,
+            'regio_id' => $surabaya->regio_id,
+            'is_active' => true,
+        ]);
+        $groupTabOtherCampus = KelompokPemuridan::query()->create([
+            'nama_kelompok' => 'Kelompok Tab Scope Other Campus',
+            'kampus_id' => $kampusSurabayaOther->kampus_id,
+            'regio_id' => $surabaya->regio_id,
+            'pemimpin_id' => $pkkTabOtherCampus->user_id,
+            'is_active' => true,
+        ]);
+        LaporanPertemuanKelompok::query()->create([
+            'kelompok_id' => $groupTabOtherCampus->kelompok_id,
+            'pkk_id' => $pkkTabOtherCampus->user_id,
+            'tanggal_pertemuan' => '2026-06-07',
+            'bahan' => 'Bahan Laporan Tab Other Campus',
+            'jumlah_hadir' => 0,
+        ]);
 
         $this->actingAs($admin)
             ->get(route('dashboard.kampus'))
@@ -254,6 +308,7 @@ class CrudPemuridanTest extends TestCase
             ->assertSee('Kampus Surabaya Scope')
             ->assertSee('Pohon Pemuridan')
             ->assertSee('Anggota KTB')
+            ->assertSee('Kelompok KTB')
             ->assertSee('AKK Scope Surabaya')
             ->assertSee('Grafik pohon pemuridan')
             ->assertDontSee('Direktori Kampus')
@@ -277,11 +332,27 @@ class CrudPemuridanTest extends TestCase
             ->assertDontSee('AKK Scope Malang');
 
         $this->actingAs($admin)
+            ->get(route('dashboard.kampus.tab', ['kampus' => $kampusSurabaya, 'tab' => 'kelompok']))
+            ->assertOk()
+            ->assertSee('Kelompok KTB KSS')
+            ->assertSee('Kelompok Tab Scope Surabaya')
+            ->assertSee('PKK Tab Scope Surabaya')
+            ->assertSee('Bahan Laporan Tab Scope')
+            ->assertSee('AKK Scope Surabaya')
+            ->assertDontSee('Kelompok Tab Scope Other Campus')
+            ->assertDontSee('Bahan Laporan Tab Other Campus')
+            ->assertDontSee('AKK Scope Malang');
+
+        $this->actingAs($admin)
             ->get(route('dashboard.kampus.show', $kampusMalang))
             ->assertForbidden();
 
         $this->actingAs($admin)
             ->get(route('dashboard.kampus.tab', ['kampus' => $kampusMalang, 'tab' => 'anggota']))
+            ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->get(route('dashboard.kampus.tab', ['kampus' => $kampusMalang, 'tab' => 'kelompok']))
             ->assertForbidden();
 
         $this->actingAs($admin)
@@ -1056,5 +1127,203 @@ class CrudPemuridanTest extends TestCase
             '/data-node-name="Kelompok Anggota Kampus Tree Test"[\s\S]*?<ul class="tree-v2-children tree-v2-level-members">[\s\S]*?data-node-name="Anggota Tree Test"[\s\S]*?data-node-name="Kelompok Anak Tree Test"/',
             $response->getContent()
         );
+    }
+
+    public function test_pkk_can_view_owned_groups_report_meetings_and_personal_tree_only(): void
+    {
+        $surabaya = Regio::query()->where('nama_regio', 'Surabaya')->firstOrFail();
+        $kampus = Kampus::query()->create([
+            'nama_kampus' => 'Kampus PKK Feature Test',
+            'singkatan' => 'KPFT',
+            'regio_id' => $surabaya->regio_id,
+            'is_active' => true,
+        ]);
+        $mentor = User::query()->create([
+            'username' => 'mentor_pkk_feature_test',
+            'password' => 'password',
+            'nama_lengkap' => 'Mentor PKK Feature Test',
+            'role' => 'pkk',
+            'kampus_id' => $kampus->kampus_id,
+            'regio_id' => $surabaya->regio_id,
+            'is_active' => true,
+        ]);
+        $mentorGroup = KelompokPemuridan::query()->create([
+            'nama_kelompok' => 'Kelompok Mentor PKK Feature Test',
+            'kampus_id' => $kampus->kampus_id,
+            'regio_id' => $surabaya->regio_id,
+            'pemimpin_id' => $mentor->user_id,
+            'is_active' => true,
+        ]);
+        $pkk = User::query()->create([
+            'username' => 'pkk_feature_test',
+            'password' => 'password',
+            'nama_lengkap' => 'PKK Feature Test',
+            'role' => 'pkk',
+            'kampus_id' => $kampus->kampus_id,
+            'regio_id' => $surabaya->regio_id,
+            'pkk_id' => $mentor->user_id,
+            'kelompok_id' => $mentorGroup->kelompok_id,
+            'is_active' => true,
+        ]);
+        User::query()->create([
+            'username' => 'sibling_pkk_feature_test',
+            'password' => 'password',
+            'nama_lengkap' => 'Sibling PKK Feature Test',
+            'role' => 'akk',
+            'kampus_id' => $kampus->kampus_id,
+            'regio_id' => $surabaya->regio_id,
+            'pkk_id' => $mentor->user_id,
+            'kelompok_id' => $mentorGroup->kelompok_id,
+            'is_active' => true,
+        ]);
+        $ownedGroup = KelompokPemuridan::query()->create([
+            'nama_kelompok' => 'Kelompok PKK Feature Test',
+            'kampus_id' => $kampus->kampus_id,
+            'regio_id' => $surabaya->regio_id,
+            'pemimpin_id' => $pkk->user_id,
+            'is_active' => true,
+        ]);
+        $member = User::query()->create([
+            'username' => 'member_pkk_feature_test',
+            'password' => 'password',
+            'nama_lengkap' => 'Member PKK Feature Test',
+            'role' => 'pkk',
+            'kampus_id' => $kampus->kampus_id,
+            'regio_id' => $surabaya->regio_id,
+            'pkk_id' => $pkk->user_id,
+            'kelompok_id' => $ownedGroup->kelompok_id,
+            'is_active' => true,
+        ]);
+        $childGroup = KelompokPemuridan::query()->create([
+            'nama_kelompok' => 'Kelompok Anak PKK Feature Test',
+            'kampus_id' => $kampus->kampus_id,
+            'regio_id' => $surabaya->regio_id,
+            'pemimpin_id' => $member->user_id,
+            'is_active' => true,
+        ]);
+        $grandChild = User::query()->create([
+            'username' => 'grand_child_pkk_feature_test',
+            'password' => 'password',
+            'nama_lengkap' => 'Grand Child PKK Feature Test',
+            'role' => 'akk',
+            'kampus_id' => $kampus->kampus_id,
+            'regio_id' => $surabaya->regio_id,
+            'pkk_id' => $member->user_id,
+            'kelompok_id' => $childGroup->kelompok_id,
+            'is_active' => true,
+        ]);
+        $otherPkk = User::query()->create([
+            'username' => 'other_pkk_feature_test',
+            'password' => 'password',
+            'nama_lengkap' => 'Other PKK Feature Test',
+            'role' => 'pkk',
+            'kampus_id' => $kampus->kampus_id,
+            'regio_id' => $surabaya->regio_id,
+            'is_active' => true,
+        ]);
+        $otherGroup = KelompokPemuridan::query()->create([
+            'nama_kelompok' => 'Kelompok Other PKK Feature Test',
+            'kampus_id' => $kampus->kampus_id,
+            'regio_id' => $surabaya->regio_id,
+            'pemimpin_id' => $otherPkk->user_id,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($pkk)
+            ->get(route('pkk.dashboard'))
+            ->assertOk()
+            ->assertSee('Kelompok Dipimpin')
+            ->assertSee('Kelompok PKK Feature Test')
+            ->assertSee('Input Laporan')
+            ->assertSee('pkk-report-dashboard-create-'.$ownedGroup->kelompok_id)
+            ->assertSee('Bahan yang Dibahas')
+            ->assertDontSee('Kelompok Other PKK Feature Test');
+
+        $this->actingAs($pkk)
+            ->get(route('pkk.kelompok'))
+            ->assertOk()
+            ->assertSee('Kelompok KTB Saya')
+            ->assertSee('Member PKK Feature Test')
+            ->assertSee('Buat Laporan')
+            ->assertDontSee('Sibling PKK Feature Test')
+            ->assertDontSee('Kelompok Other PKK Feature Test');
+
+        $treeResponse = $this->actingAs($pkk)
+            ->get(route('pkk.pohon'))
+            ->assertOk()
+            ->assertSee('Pohon Pemuridan Saya')
+            ->assertSee('Mentor PKK Feature Test')
+            ->assertSee('PKK Feature Test')
+            ->assertSee('Member PKK Feature Test')
+            ->assertSee('Grand Child PKK Feature Test')
+            ->assertSee('Kelompok Anak PKK Feature Test')
+            ->assertDontSee('Sibling PKK Feature Test')
+            ->assertDontSee('Other PKK Feature Test');
+
+        $this->assertStringNotContainsString('Sibling PKK Feature Test', $treeResponse->getContent());
+
+        $this->actingAs($pkk)
+            ->post(route('pkk.kelompok.laporan.store', $ownedGroup), [
+                'tanggal_pertemuan' => '2026-06-06',
+                'pertemuan_ke' => 3,
+                'bahan' => 'Bahan KTB Feature Test',
+                'ringkasan' => 'Diskusi ringkas',
+                'anggota_hadir' => [$member->user_id],
+                'catatan' => 'Catatan pertemuan',
+                'rencana_lanjutan' => 'Follow up pribadi',
+                'kendala' => 'Tidak ada',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $report = LaporanPertemuanKelompok::query()
+            ->where('kelompok_id', $ownedGroup->kelompok_id)
+            ->firstOrFail();
+
+        $this->assertSame($pkk->user_id, $report->pkk_id);
+        $this->assertSame(1, $report->jumlah_hadir);
+        $this->assertSame([$member->user_id], $report->anggota_hadir);
+
+        $this->actingAs($pkk)
+            ->put(route('pkk.laporan.update', $report), [
+                'tanggal_pertemuan' => '2026-06-07',
+                'pertemuan_ke' => 4,
+                'bahan' => 'Bahan KTB Feature Test Update',
+                'anggota_hadir' => [$member->user_id],
+                'rencana_lanjutan' => 'Follow up update',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('laporan_pertemuan_kelompok', [
+            'laporan_id' => $report->laporan_id,
+            'pertemuan_ke' => 4,
+            'bahan' => 'Bahan KTB Feature Test Update',
+            'jumlah_hadir' => 1,
+        ]);
+
+        $this->actingAs($pkk)
+            ->post(route('pkk.kelompok.laporan.store', $ownedGroup), [
+                'tanggal_pertemuan' => '2026-06-08',
+                'bahan' => 'Bahan Hadir Ilegal',
+                'anggota_hadir' => [$grandChild->user_id],
+            ])
+            ->assertSessionHasErrors('anggota_hadir');
+
+        $this->actingAs($pkk)
+            ->post(route('pkk.kelompok.laporan.store', $otherGroup), [
+                'tanggal_pertemuan' => '2026-06-09',
+                'bahan' => 'Bahan Kelompok Lain',
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($pkk)
+            ->delete(route('pkk.laporan.destroy', $report))
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseMissing('laporan_pertemuan_kelompok', [
+            'laporan_id' => $report->laporan_id,
+        ]);
     }
 }

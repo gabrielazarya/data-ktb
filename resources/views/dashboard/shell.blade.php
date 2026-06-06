@@ -695,7 +695,8 @@
     }
 
     .campus-tab-panel .tree-v2-surface,
-    .campus-tab-panel .campus-members-panel {
+    .campus-tab-panel .campus-members-panel,
+    .campus-tab-panel .campus-groups-panel {
       border-top-left-radius: 0;
       border-top-right-radius: 0;
     }
@@ -845,6 +846,9 @@
     }
 
     .modal-head {
+      position: sticky;
+      top: 0;
+      z-index: 2;
       display: flex;
       justify-content: space-between;
       gap: 16px;
@@ -931,7 +935,8 @@
     }
 
     .field input,
-    .field select {
+    .field select,
+    .field textarea {
       width: 100%;
       min-height: 40px;
       padding: 9px 10px;
@@ -943,9 +948,15 @@
     }
 
     .field input:focus,
-    .field select:focus {
+    .field select:focus,
+    .field textarea:focus {
       border-color: var(--green);
       box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+    }
+
+    .field textarea {
+      min-height: 88px;
+      resize: vertical;
     }
 
     .checkbox-field {
@@ -959,6 +970,43 @@
       width: 16px;
       height: 16px;
       margin: 0;
+    }
+
+    .checkbox-stack {
+      display: grid;
+      gap: 8px;
+      max-height: 160px;
+      overflow: auto;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.76);
+    }
+
+    .report-form {
+      display: grid;
+      gap: 14px;
+    }
+
+    .report-form .form-grid {
+      gap: 14px;
+    }
+
+    .report-form textarea {
+      min-height: 74px;
+    }
+
+    .report-form .checkbox-stack {
+      max-height: 150px;
+    }
+
+    .report-form .form-actions {
+      position: sticky;
+      bottom: -18px;
+      margin: 0 -18px -18px;
+      padding: 14px 18px 18px;
+      border-top: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(17, 24, 32, 0.92), #111820);
     }
 
     .form-actions,
@@ -1268,6 +1316,232 @@
 
     .member-list .badge.neutral {
       color: var(--navy);
+    }
+
+    .pkk-group-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+
+    .pkk-group-card {
+      padding: 22px;
+      margin-bottom: 0;
+    }
+
+    .pkk-group-card .panel-head {
+      align-items: flex-start;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .pkk-group-title {
+      min-width: 0;
+    }
+
+    .pkk-group-title h2 {
+      margin-top: 6px;
+      font-size: clamp(1.35rem, 2vw, 1.9rem);
+    }
+
+    .pkk-summary-grid {
+      display: grid;
+      grid-template-columns: minmax(260px, 1.5fr) repeat(2, minmax(120px, 0.5fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .pkk-summary-item {
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .pkk-summary-item span,
+    .pkk-section-label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .pkk-summary-item strong {
+      display: block;
+      color: var(--text);
+      font-size: 1.05rem;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .pkk-summary-item.is-number strong {
+      font-size: 1.55rem;
+      line-height: 1;
+    }
+
+    .pkk-group-body {
+      display: grid;
+      grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.45fr);
+      gap: 18px;
+      align-items: start;
+      margin-top: 18px;
+    }
+
+    .pkk-subpanel {
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .pkk-subpanel .member-list li:first-child {
+      border-top: 0;
+    }
+
+    .pkk-member-list {
+      max-height: 440px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .pkk-report-empty {
+      min-height: 160px;
+      display: grid;
+      align-items: center;
+    }
+
+    .pkk-report-table-wrap {
+      border-radius: 8px;
+    }
+
+    .pkk-report-table {
+      min-width: 680px;
+      table-layout: fixed;
+    }
+
+    .pkk-report-table th,
+    .pkk-report-table td {
+      padding: 14px 16px;
+    }
+
+    .pkk-report-table th {
+      white-space: nowrap;
+    }
+
+    .pkk-report-table .report-date-col {
+      width: 140px;
+    }
+
+    .pkk-report-table .report-material-col {
+      width: 38%;
+    }
+
+    .pkk-report-table .report-attendance-col {
+      width: 34%;
+    }
+
+    .pkk-report-table .report-action-col {
+      width: 104px;
+    }
+
+    .pkk-report-table .cell-main,
+    .pkk-report-table .muted {
+      overflow-wrap: anywhere;
+    }
+
+    .pkk-report-actions {
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pkk-report-actions .icon-btn {
+      width: 38px;
+      min-width: 38px;
+      height: 38px;
+      min-height: 38px;
+    }
+
+    .campus-group-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .campus-group-card {
+      min-width: 0;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .campus-group-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .campus-group-head h3 {
+      margin: 4px 0;
+      color: var(--text);
+      font-size: 1.18rem;
+      line-height: 1.3;
+    }
+
+    .campus-group-head p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .campus-group-stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin: 14px 0;
+    }
+
+    .campus-group-stats div {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .campus-group-stats span {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .campus-group-stats strong {
+      color: var(--text);
+      font-size: 1.35rem;
+      line-height: 1;
+    }
+
+    .campus-group-empty {
+      margin-top: 12px;
+    }
+
+    .campus-report-table {
+      min-width: 860px;
+    }
+
+    .campus-report-table th,
+    .campus-report-table td {
+      padding: 13px 14px;
     }
 
     .tree-v2-surface {
@@ -1664,6 +1938,7 @@
     .search,
     .field input,
     .field select,
+    .field textarea,
     .campus-tab-button,
     .user-chip {
       background: #111820;
@@ -1688,13 +1963,15 @@
     }
 
     .search::placeholder,
-    .field input::placeholder {
+    .field input::placeholder,
+    .field textarea::placeholder {
       color: #748296;
     }
 
     .search:focus,
     .field input:focus,
     .field select:focus,
+    .field textarea:focus,
     .user-chip:hover,
     .user-chip:focus-visible {
       border-color: rgba(94, 234, 212, 0.62);
@@ -1704,6 +1981,29 @@
     .field label,
     .checkbox-field {
       color: #c7d2df;
+    }
+
+    .checkbox-stack {
+      background: rgba(17, 24, 32, 0.82);
+      border-color: var(--line);
+      scrollbar-color: #516072 #111820;
+    }
+
+    .checkbox-stack .checkbox-field {
+      min-height: 34px;
+      padding: 7px 8px;
+      border-radius: 6px;
+      color: var(--text);
+    }
+
+    .checkbox-stack .checkbox-field:hover {
+      background: rgba(94, 234, 212, 0.08);
+      color: var(--green);
+    }
+
+    .checkbox-field input {
+      accent-color: var(--green);
+      flex: 0 0 auto;
     }
 
     option {
@@ -1942,6 +2242,10 @@
       .table-toolbar {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
+
+      .pkk-group-body {
+        grid-template-columns: 1fr;
+      }
     }
 
     @media (max-width: 760px) {
@@ -2006,8 +2310,17 @@
       .content-grid,
       .management-grid,
       .table-toolbar,
-      .form-grid {
+      .form-grid,
+      .pkk-summary-grid {
         grid-template-columns: 1fr;
+      }
+
+      .pkk-group-card {
+        padding: 16px;
+      }
+
+      .pkk-member-list {
+        max-height: none;
       }
 
       .page-actions,
@@ -2297,6 +2610,10 @@
             </details>
           @endif
         @endif
+        @if ($user->isPKK())
+          <a class="{{ $activePage === 'pkk-kelompok' ? 'active' : '' }}" href="{{ route('pkk.kelompok') }}">Kelompok Saya</a>
+          <a class="{{ $activePage === 'pkk-pohon' ? 'active' : '' }}" href="{{ route('pkk.pohon') }}">Pohon Saya</a>
+        @endif
       </nav>
 
     </aside>
@@ -2527,6 +2844,65 @@
                 </div>
               </div>
             </article>
+            @if ($user->isPKK())
+              <article class="panel">
+                <div class="panel-head">
+                  <div>
+                    <span class="eyebrow">Kelompok</span>
+                    <h2>Kelompok Dipimpin</h2>
+                  </div>
+                  <a class="btn is-compact" href="{{ route('pkk.kelompok') }}">Lihat Semua</a>
+                </div>
+                @if ($pkkGroups->isEmpty())
+                  <div class="empty-state">Belum ada kelompok KTB yang terhubung ke akun ini.</div>
+                @else
+                  <ul class="member-list">
+                    @foreach ($pkkGroups->take(4) as $pkkGroup)
+                      @php
+                        $dashboardReportModalId = 'pkk-report-dashboard-create-'.$pkkGroup->kelompok_id;
+                      @endphp
+                      <li>
+                        <div class="member-entry">
+                          <strong>{{ $pkkGroup->nama_kelompok }}</strong>
+                          <span>{{ number_format($pkkGroup->anggota->count(), 0, ',', '.') }} anggota - {{ $pkkGroup->laporanPertemuan->count() }} laporan</span>
+                        </div>
+                        <div class="crud-actions">
+                          <span class="badge {{ $pkkGroup->is_active ? '' : 'warning' }}">{{ $pkkGroup->is_active ? 'Aktif' : 'Nonaktif' }}</span>
+                          <button class="btn is-compact" type="button" data-modal-open="{{ $dashboardReportModalId }}">Input Laporan</button>
+                        </div>
+                      </li>
+                    @endforeach
+                  </ul>
+                  @foreach ($pkkGroups->take(4) as $pkkGroup)
+                    @php
+                      $dashboardReportModalId = 'pkk-report-dashboard-create-'.$pkkGroup->kelompok_id;
+                    @endphp
+                    <div class="modal" id="{{ $dashboardReportModalId }}" hidden>
+                      <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="{{ $dashboardReportModalId }}-title">
+                        <div class="modal-head">
+                          <div>
+                            <span class="eyebrow">Laporan Pertemuan</span>
+                            <h2 id="{{ $dashboardReportModalId }}-title">{{ $pkkGroup->nama_kelompok }}</h2>
+                          </div>
+                          <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+                        </div>
+                        <div class="modal-body">
+                          @include('dashboard.partials.pkk-report-form', [
+                            'group' => $pkkGroup,
+                            'action' => route('pkk.kelompok.laporan.store', $pkkGroup),
+                            'modalId' => $dashboardReportModalId,
+                          ])
+                        </div>
+                      </div>
+                    </div>
+                  @endforeach
+                  <div class="row-actions panel-actions">
+                    <a class="btn is-compact" href="{{ route('pkk.pohon') }}">Pohon Saya</a>
+                    <a class="btn is-compact" href="{{ route('pkk.kelompok') }}">Semua Laporan</a>
+                  </div>
+                @endif
+              </article>
+            @endif
           </section>
         @endunless
 
@@ -3186,6 +3562,200 @@
             </div>
           @endif
         </section>
+      @elseif ($activePage === 'pkk-kelompok' && $user->isPKK())
+        <section class="pkk-group-list">
+          @forelse ($pkkGroups as $pkkGroup)
+            @php
+              $createReportModalId = 'pkk-report-create-'.$pkkGroup->kelompok_id;
+            @endphp
+            <article class="panel pkk-group-card" id="kelompok-{{ $pkkGroup->kelompok_id }}">
+              <div class="panel-head">
+                <div class="pkk-group-title">
+                  <span class="eyebrow">Kelompok KTB</span>
+                  <h2>{{ $pkkGroup->nama_kelompok }}</h2>
+                </div>
+                <span class="badge {{ $pkkGroup->is_active ? '' : 'warning' }}">{{ $pkkGroup->is_active ? 'Aktif' : 'Nonaktif' }}</span>
+              </div>
+              <div class="pkk-summary-grid">
+                <div class="pkk-summary-item">
+                  <span>Kampus</span>
+                  <strong>{{ $pkkGroup->kampus?->nama_kampus ?: 'Tanpa kampus' }}</strong>
+                </div>
+                <div class="pkk-summary-item is-number">
+                  <span>Anggota</span>
+                  <strong>{{ number_format($pkkGroup->anggota->count(), 0, ',', '.') }}</strong>
+                </div>
+                <div class="pkk-summary-item is-number">
+                  <span>Laporan</span>
+                  <strong>{{ number_format($pkkGroup->laporanPertemuan->count(), 0, ',', '.') }}</strong>
+                </div>
+              </div>
+
+              <div class="row-actions panel-actions">
+                <button class="btn is-compact" type="button" data-modal-open="{{ $createReportModalId }}">Buat Laporan</button>
+                <a class="btn is-compact" href="{{ route('pkk.pohon') }}">Lihat Pohon</a>
+              </div>
+
+              <div class="modal" id="{{ $createReportModalId }}" hidden>
+                <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="{{ $createReportModalId }}-title">
+                  <div class="modal-head">
+                    <div>
+                      <span class="eyebrow">Laporan Pertemuan</span>
+                      <h2 id="{{ $createReportModalId }}-title">{{ $pkkGroup->nama_kelompok }}</h2>
+                    </div>
+                    <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+                  </div>
+                  <div class="modal-body">
+                    @include('dashboard.partials.pkk-report-form', [
+                      'group' => $pkkGroup,
+                      'action' => route('pkk.kelompok.laporan.store', $pkkGroup),
+                      'modalId' => $createReportModalId,
+                    ])
+                  </div>
+                </div>
+              </div>
+
+              <div class="pkk-group-body">
+                <section class="pkk-subpanel" aria-labelledby="pkk-members-{{ $pkkGroup->kelompok_id }}">
+                  <span class="pkk-section-label" id="pkk-members-{{ $pkkGroup->kelompok_id }}">Anggota Kelompok</span>
+                  @if ($pkkGroup->anggota->isEmpty())
+                    <div class="empty-state">Belum ada anggota dalam kelompok ini.</div>
+                  @else
+                    <ul class="member-list pkk-member-list">
+                      @foreach ($pkkGroup->anggota as $member)
+                        <li>
+                          <div class="member-entry">
+                            <strong>{{ $member->nama_lengkap }}</strong>
+                            <span>{{ $member->username }}{{ $member->angkatan ? ' - '.$member->angkatan : '' }}</span>
+                          </div>
+                          <span class="badge neutral">{{ $member->role === 'pkk' ? 'PKK' : 'AKK' }}</span>
+                        </li>
+                      @endforeach
+                    </ul>
+                  @endif
+                </section>
+
+                <section class="pkk-subpanel" aria-labelledby="pkk-reports-{{ $pkkGroup->kelompok_id }}">
+                  <span class="pkk-section-label" id="pkk-reports-{{ $pkkGroup->kelompok_id }}">Laporan Pertemuan</span>
+                  @if ($pkkGroup->laporanPertemuan->isEmpty())
+                    <div class="empty-state pkk-report-empty">Belum ada laporan pertemuan untuk kelompok ini.</div>
+                  @else
+                    <div class="table-wrap pkk-report-table-wrap">
+                      <table class="table pkk-report-table">
+                        <thead>
+                          <tr>
+                            <th class="report-date-col">Tanggal</th>
+                            <th class="report-material-col">Bahan</th>
+                            <th class="report-attendance-col">Hadir</th>
+                            <th class="report-action-col">Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @foreach ($pkkGroup->laporanPertemuan as $report)
+                            @php
+                              $editReportModalId = 'pkk-report-edit-'.$report->laporan_id;
+                              $deleteReportModalId = 'pkk-report-delete-'.$report->laporan_id;
+                              $attendanceIds = collect($report->anggota_hadir ?? [])->map(fn ($id) => (int) $id);
+                              $attendanceNames = $pkkGroup->anggota
+                                  ->whereIn('user_id', $attendanceIds)
+                                  ->pluck('nama_lengkap')
+                                  ->values();
+                            @endphp
+                            <tr>
+                              <td>
+                                <strong>{{ $report->tanggal_pertemuan?->format('d/m/Y') }}</strong>
+                                <div class="muted">{{ $report->pertemuan_ke ? 'Pertemuan '.$report->pertemuan_ke : 'Pertemuan' }}</div>
+                              </td>
+                              <td>
+                                <div class="cell-main">{{ $report->bahan }}</div>
+                                @if ($report->ringkasan)
+                                  <div class="muted">{{ $report->ringkasan }}</div>
+                                @endif
+                              </td>
+                              <td>
+                                <strong>{{ number_format($report->jumlah_hadir, 0, ',', '.') }}</strong>
+                                <div class="muted">{{ $attendanceNames->isNotEmpty() ? $attendanceNames->join(', ') : 'Tidak ada anggota dicatat hadir' }}</div>
+                              </td>
+                              <td>
+                                <div class="row-actions pkk-report-actions">
+                                  <button class="btn icon-btn" type="button" data-modal-open="{{ $editReportModalId }}" title="Edit" aria-label="Edit laporan {{ $report->laporan_id }}">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                      <path d="M12 20h9"></path>
+                                      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                                    </svg>
+                                  </button>
+                                  <button class="btn icon-btn is-danger" type="button" data-modal-open="{{ $deleteReportModalId }}" title="Hapus" aria-label="Hapus laporan {{ $report->laporan_id }}">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                      <path d="M3 6h18"></path>
+                                      <path d="M8 6V4h8v2"></path>
+                                      <path d="m19 6-1 14H6L5 6"></path>
+                                      <path d="M10 11v6"></path>
+                                      <path d="M14 11v6"></path>
+                                    </svg>
+                                  </button>
+                                </div>
+
+                            <div class="modal" id="{{ $editReportModalId }}" hidden>
+                              <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="{{ $editReportModalId }}-title">
+                                <div class="modal-head">
+                                  <div>
+                                    <span class="eyebrow">Edit Laporan</span>
+                                    <h2 id="{{ $editReportModalId }}-title">{{ $pkkGroup->nama_kelompok }}</h2>
+                                  </div>
+                                  <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+                                </div>
+                                <div class="modal-body">
+                                  @include('dashboard.partials.pkk-report-form', [
+                                    'group' => $pkkGroup,
+                                    'report' => $report,
+                                    'action' => route('pkk.laporan.update', $report),
+                                    'method' => 'PUT',
+                                    'modalId' => $editReportModalId,
+                                  ])
+                                </div>
+                              </div>
+                            </div>
+
+                            <div class="modal" id="{{ $deleteReportModalId }}" hidden>
+                              <div class="modal-panel is-small" role="dialog" aria-modal="true" aria-labelledby="{{ $deleteReportModalId }}-title">
+                                <div class="modal-head">
+                                  <div>
+                                    <span class="eyebrow">Hapus Laporan</span>
+                                    <h2 id="{{ $deleteReportModalId }}-title">{{ $report->tanggal_pertemuan?->format('d/m/Y') }}</h2>
+                                  </div>
+                                  <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+                                </div>
+                                <div class="modal-body">
+                                  <p class="muted">Hapus laporan pertemuan {{ $pkkGroup->nama_kelompok }}?</p>
+                                  <form method="POST" action="{{ route('pkk.laporan.destroy', $report) }}" class="inline-delete">
+                                    @csrf
+                                    @method('DELETE')
+                                    <div class="form-actions">
+                                      <button class="btn is-compact is-danger" type="submit">Hapus Laporan</button>
+                                      <button class="btn is-compact" type="button" data-modal-close>Batal</button>
+                                    </div>
+                                  </form>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      @endforeach
+                    </tbody>
+                  </table>
+                    </div>
+                  @endif
+                </section>
+              </div>
+            </article>
+          @empty
+            <article class="panel">
+              <div class="empty-state">Belum ada kelompok KTB yang Anda pimpin.</div>
+            </article>
+          @endforelse
+        </section>
+      @elseif ($activePage === 'pkk-pohon' && $user->isPKK())
+        @include('dashboard.partials.campus-tree-tab')
       @elseif (in_array($activePage, ['pohon', 'kampus-detail'], true) && $canSeeAdminData)
         @if ($activePage === 'kampus-detail' && $selectedKampus)
           <section class="campus-tab-panel" data-campus-tabs>
@@ -3209,6 +3779,16 @@
                 data-tab-url="{{ route('dashboard.kampus.tab', ['kampus' => $selectedKampus, 'tab' => 'anggota']) }}"
               >
                 Anggota KTB
+              </button>
+              <button
+                class="campus-tab-button"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                data-campus-tab-button
+                data-tab-url="{{ route('dashboard.kampus.tab', ['kampus' => $selectedKampus, 'tab' => 'kelompok']) }}"
+              >
+                Kelompok KTB
               </button>
             </div>
             <div class="campus-tab-content" data-campus-tab-content>
@@ -4105,18 +4685,27 @@
       applyColumnFilters();
     });
 
-    document.querySelectorAll('[data-filter-block]').forEach(function (input) {
-      input.addEventListener('input', function () {
-        var selector = input.getAttribute('data-filter-block');
-        var query = input.value.toLowerCase();
-        if (!selector) return;
+    function bindFilterBlocks(root) {
+      var scope = root || document;
 
-        document.querySelectorAll(selector).forEach(function (block) {
-          var text = (block.getAttribute('data-filter-text') || block.textContent || '').toLowerCase();
-          block.hidden = query !== '' && !text.includes(query);
+      scope.querySelectorAll('[data-filter-block]').forEach(function (input) {
+        if (input.getAttribute('data-filter-block-bound') === '1') return;
+
+        input.setAttribute('data-filter-block-bound', '1');
+        input.addEventListener('input', function () {
+          var selector = input.getAttribute('data-filter-block');
+          var query = input.value.toLowerCase();
+          if (!selector) return;
+
+          scope.querySelectorAll(selector).forEach(function (block) {
+            var text = (block.getAttribute('data-filter-text') || block.textContent || '').toLowerCase();
+            block.hidden = query !== '' && !text.includes(query);
+          });
         });
       });
-    });
+    }
+
+    bindFilterBlocks(document);
 
     function bindTreeCanvases(root) {
       (root || document).querySelectorAll('[data-drag-scroll]').forEach(function (treeScrollArea) {
@@ -4273,6 +4862,7 @@
 
                 bindTreeNodeActions(content);
                 bindFilterTables(content);
+                bindFilterBlocks(content);
                 bindTreeCanvases(content);
               })
               .catch(function () {
