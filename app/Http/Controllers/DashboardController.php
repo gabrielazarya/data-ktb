@@ -34,6 +34,16 @@ class DashboardController extends Controller
         return $this->show('pkk');
     }
 
+    public function pkkKelompok(): View
+    {
+        return $this->showPkkSection('pkk-kelompok');
+    }
+
+    public function pkkPohon(): View
+    {
+        return $this->showPkkSection('pkk-pohon');
+    }
+
     public function akk(): View
     {
         return $this->show('akk');
@@ -71,13 +81,24 @@ class DashboardController extends Controller
         $this->authorizeKampusDetailAccess($kampus, $user);
 
         $kampusDetail = $this->campusDetailRow($kampus);
-        $tab = $request->query('tab') === 'anggota' ? 'anggota' : 'pohon';
+        $tab = match ($request->query('tab')) {
+            'anggota' => 'anggota',
+            'kelompok' => 'kelompok',
+            default => 'pohon',
+        };
 
         if ($tab === 'anggota') {
             return view('dashboard.partials.campus-members-tab', [
                 'selectedKampus' => $kampusDetail,
                 'selectedCampusMembers' => $this->selectedCampusMembers($kampusDetail),
                 'roleNames' => $this->roleNames(),
+            ]);
+        }
+
+        if ($tab === 'kelompok') {
+            return view('dashboard.partials.campus-groups-tab', [
+                'selectedKampus' => $kampusDetail,
+                'selectedCampusGroups' => $this->selectedCampusGroups($kampusDetail),
             ]);
         }
 
@@ -131,6 +152,16 @@ class DashboardController extends Controller
         return view('dashboard.shell', $this->buildDashboardData((string) $user->role, $user, $activePage));
     }
 
+    private function showPkkSection(string $activePage): View
+    {
+        /** @var User|null $user */
+        $user = Auth::user();
+
+        abort_unless($user && $user->isPKK(), 403);
+
+        return view('dashboard.shell', $this->buildDashboardData('pkk', $user, $activePage));
+    }
+
     private function showKampusDetail(Kampus $kampus): View
     {
         /** @var User $user */
@@ -166,13 +197,16 @@ class DashboardController extends Controller
         $stats = $canSeeAdminData ? $this->adminStats($regioScopeId, $isRegioScoped) : [];
         $campusRoleGroups = $canSeeAdminData ? $this->campusRoleGroups($regioScopeId, $isRegioScoped) : collect();
         $treeGroups = $canSeeAdminData ? $campusRoleGroups : collect();
+        $pkkGroups = $role === 'pkk' ? $this->pkkGroups($user) : collect();
+        $pkkTreeGroups = $role === 'pkk' ? $this->pkkPersonalTreeGroups($user) : collect();
+        $visibleTreeGroups = $canSeeAdminData ? $treeGroups : $pkkTreeGroups;
 
         return [
             'activePage' => $activePage,
             'dashboard' => $this->dashboardConfig($role, $user, $activePage),
             'metrics' => $canSeeAdminData
                 ? ($user->isSuperAdmin() ? $this->superAdminMetrics($stats) : $this->adminMetrics($stats))
-                : $this->personalMetrics($user),
+                : $this->personalMetrics($user, $pkkGroups),
             'canSeeAdminData' => $canSeeAdminData,
             'canManageData' => $this->canManageData($user),
             'roleCounts' => $stats['roleCounts'] ?? $this->blankRoleCounts(),
@@ -181,11 +215,12 @@ class DashboardController extends Controller
             'userRows' => $canSeeAdminData ? $this->userRows($regioScopeId, $isRegioScoped) : collect(),
             'memberRows' => $canSeeAdminData ? $this->memberRows($regioScopeId, $isRegioScoped) : collect(),
             'campusRoleGroups' => $campusRoleGroups,
-            'treeGroups' => $treeGroups,
-            'treeSearchNames' => $canSeeAdminData ? $this->treeSearchNames($treeGroups) : collect(),
+            'treeGroups' => $visibleTreeGroups,
+            'treeSearchNames' => $visibleTreeGroups->isNotEmpty() ? $this->treeSearchNames($visibleTreeGroups) : collect(),
             'campusOptions' => $canSeeAdminData ? $this->campusOptions($regioScopeId, $isRegioScoped) : collect(),
             'regioOptions' => $canSeeAdminData ? $this->regioOptions($regioScopeId, $isRegioScoped) : collect(),
             'kategoriJurusanOptions' => $this->kategoriJurusanOptions(),
+            'pkkGroups' => $pkkGroups,
             'selectedKampus' => null,
             'selectedCampusMembers' => collect(),
             'selectedCampusGroups' => collect(),
@@ -292,8 +327,44 @@ class DashboardController extends Controller
         ];
     }
 
-    private function personalMetrics(User $user): array
+    private function personalMetrics(User $user, $pkkGroups = null): array
     {
+        if ($user->isPKK()) {
+            $pkkGroups = $pkkGroups ?? $this->pkkGroups($user);
+            $totalMembers = $pkkGroups
+                ->flatMap(fn (KelompokPemuridan $group) => $group->anggota->pluck('user_id'))
+                ->unique()
+                ->count();
+            $totalReports = $pkkGroups->sum(fn (KelompokPemuridan $group): int => $group->laporanPertemuan->count());
+
+            return [
+                [
+                    'label' => 'Kelompok',
+                    'value' => $this->formatNumber($pkkGroups->count()),
+                    'hint' => $this->formatNumber($pkkGroups->where('is_active', true)->count()).' kelompok aktif',
+                    'tone' => 'primary',
+                ],
+                [
+                    'label' => 'Anggota',
+                    'value' => $this->formatNumber($totalMembers),
+                    'hint' => 'AKK di kelompok yang dipimpin',
+                    'tone' => 'success',
+                ],
+                [
+                    'label' => 'Laporan',
+                    'value' => $this->formatNumber($totalReports),
+                    'hint' => 'Total laporan pertemuan',
+                    'tone' => 'info',
+                ],
+                [
+                    'label' => 'Kampus',
+                    'value' => $user->kampus?->singkatan ?: '-',
+                    'hint' => $user->kampus?->nama_kampus ?: 'Belum terhubung kampus',
+                    'tone' => 'warning',
+                ],
+            ];
+        }
+
         return [
             [
                 'label' => 'Status Akun',
@@ -368,6 +439,134 @@ class DashboardController extends Controller
             ->whereIn('role', ['akk', 'pkk'])
             ->orderByDesc('created_at')
             ->get();
+    }
+
+    private function pkkGroups(User $user)
+    {
+        return KelompokPemuridan::query()
+            ->with([
+                'kampus.regio',
+                'regio',
+                'anggota' => fn ($query) => $query
+                    ->with(['kampus', 'kategoriJurusan'])
+                    ->whereIn('role', ['akk', 'pkk'])
+                    ->orderBy('nama_lengkap'),
+                'laporanPertemuan' => fn ($query) => $query
+                    ->orderByDesc('tanggal_pertemuan')
+                    ->orderByDesc('created_at'),
+            ])
+            ->withCount('anggota')
+            ->where('pemimpin_id', $user->user_id)
+            ->orderByDesc('is_active')
+            ->orderBy('nama_kelompok')
+            ->get();
+    }
+
+    private function pkkPersonalTreeGroups(User $user)
+    {
+        [$people, $groupRows] = $this->pkkPersonalTreeData($user);
+
+        if ($people->isEmpty()) {
+            return collect();
+        }
+
+        $currentUser = $people->firstWhere('user_id', $user->user_id) ?: $user;
+
+        return collect([
+            [
+                'id' => 'pkk-personal-'.$user->user_id,
+                'campus_id' => $currentUser->kampus_id,
+                'name' => 'Pohon Pemuridan Saya',
+                'short' => 'Pohon Saya',
+                'is_active' => true,
+                'pkk' => $people->whereIn('user_id', $groupRows->pluck('pemimpin_id')->unique())->values(),
+                'akk' => $people,
+                'groups' => $groupRows,
+                'branches' => $this->buildPersonTree($people, $groupRows),
+                'unassigned_akk' => collect(),
+                'groups_count' => $groupRows->count(),
+                'total' => $people->count(),
+            ],
+        ]);
+    }
+
+    private function pkkPersonalTreeData(User $user): array
+    {
+        $currentUser = User::query()
+            ->with(['kampus', 'regio', 'kategoriJurusan', 'kelompokPemuridan'])
+            ->findOrFail($user->user_id);
+        $peopleById = collect([$currentUser->user_id => $currentUser]);
+        $groupIds = collect();
+        $cursor = $currentUser;
+        $ancestorTrail = [];
+
+        while ($cursor && filled($cursor->kelompok_id) && ! in_array((int) $cursor->user_id, $ancestorTrail, true)) {
+            $ancestorTrail[] = (int) $cursor->user_id;
+            $parentGroup = KelompokPemuridan::query()
+                ->with(['kampus.regio', 'regio', 'pemimpin.kampus', 'pemimpin.regio', 'pemimpin.kategoriJurusan', 'pemimpin.kelompokPemuridan'])
+                ->find($cursor->kelompok_id);
+
+            if (! $parentGroup || ! $parentGroup->pemimpin) {
+                break;
+            }
+
+            $groupIds->push($parentGroup->kelompok_id);
+            $leader = $parentGroup->pemimpin;
+            $peopleById->put($leader->user_id, $leader);
+
+            if (in_array((int) $leader->user_id, $ancestorTrail, true)) {
+                break;
+            }
+
+            $cursor = $leader;
+        }
+
+        $this->collectPkkDescendantTreeData($currentUser, $peopleById, $groupIds);
+
+        $people = User::query()
+            ->with(['kampus', 'regio', 'kategoriJurusan', 'pkkLeader.kampus', 'kelompokPemuridan'])
+            ->whereIn('user_id', $peopleById->keys())
+            ->whereIn('role', ['akk', 'pkk'])
+            ->orderBy('nama_lengkap')
+            ->get();
+
+        $groupRows = KelompokPemuridan::query()
+            ->with(['kampus.regio', 'regio', 'pemimpin.kampus'])
+            ->whereIn('kelompok_id', $groupIds->unique()->values())
+            ->orderBy('nama_kelompok')
+            ->get();
+
+        return [$people, $groupRows];
+    }
+
+    private function collectPkkDescendantTreeData(User $leader, $peopleById, $groupIds, array $trail = []): void
+    {
+        if (in_array((int) $leader->user_id, $trail, true)) {
+            return;
+        }
+
+        $nextTrail = [...$trail, (int) $leader->user_id];
+        $groups = KelompokPemuridan::query()
+            ->with(['kampus.regio', 'regio', 'pemimpin.kampus'])
+            ->where('pemimpin_id', $leader->user_id)
+            ->orderBy('nama_kelompok')
+            ->get();
+
+        foreach ($groups as $group) {
+            $groupIds->push($group->kelompok_id);
+
+            $members = User::query()
+                ->with(['kampus', 'regio', 'kategoriJurusan', 'pkkLeader.kampus', 'kelompokPemuridan'])
+                ->where('kelompok_id', $group->kelompok_id)
+                ->whereIn('role', ['akk', 'pkk'])
+                ->orderBy('nama_lengkap')
+                ->get();
+
+            foreach ($members as $member) {
+                $peopleById->put($member->user_id, $member);
+                $this->collectPkkDescendantTreeData($member, $peopleById, $groupIds, $nextTrail);
+            }
+        }
     }
 
     private function campusRoleGroups(?int $regioId, bool $isRegioScoped)
@@ -507,8 +706,17 @@ class DashboardController extends Controller
     private function selectedCampusGroups(Kampus $kampus)
     {
         return KelompokPemuridan::query()
-            ->with('pemimpin')
-            ->withCount('anggota')
+            ->with([
+                'pemimpin',
+                'anggota' => fn ($query) => $query
+                    ->whereIn('role', ['akk', 'pkk'])
+                    ->orderBy('nama_lengkap'),
+                'laporanPertemuan' => fn ($query) => $query
+                    ->with('pelapor')
+                    ->orderByDesc('tanggal_pertemuan')
+                    ->orderByDesc('created_at'),
+            ])
+            ->withCount(['anggota', 'laporanPertemuan'])
             ->where('kampus_id', $kampus->kampus_id)
             ->orderBy('nama_kelompok')
             ->get();
@@ -709,6 +917,16 @@ class DashboardController extends Controller
                 'title' => 'Pohon Pemuridan',
                 'eyebrow' => 'Peta Pemuridan',
                 'subtitle' => 'Visualisasi AKK, PKK, dan kelompok berdasarkan kampus.',
+            ]),
+            'pkk-kelompok' => array_merge($config, [
+                'title' => 'Kelompok KTB Saya',
+                'eyebrow' => 'Pelaporan PKK',
+                'subtitle' => 'Kelompok yang Anda pimpin dan laporan pertemuan KTB.',
+            ]),
+            'pkk-pohon' => array_merge($config, [
+                'title' => 'Pohon Pemuridan Saya',
+                'eyebrow' => 'Peta Pemuridan Pribadi',
+                'subtitle' => 'Rantai pemimpin di atas Anda dan pemuridan yang Anda pimpin ke bawah.',
             ]),
             default => $config,
         };

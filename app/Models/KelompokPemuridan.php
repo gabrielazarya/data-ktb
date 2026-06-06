@@ -46,4 +46,9 @@ class KelompokPemuridan extends Model
     {
         return $this->hasMany(User::class, 'kelompok_id', 'kelompok_id');
     }
+
+    public function laporanPertemuan()
+    {
+        return $this->hasMany(LaporanPertemuanKelompok::class, 'kelompok_id', 'kelompok_id');
+    }
 }

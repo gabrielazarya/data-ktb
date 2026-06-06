@@ -162,6 +162,11 @@ class User extends Authenticatable
         return $this->hasMany(KelompokPemuridan::class, 'pemimpin_id', 'user_id');
     }
 
+    public function laporanPertemuan()
+    {
+        return $this->hasMany(LaporanPertemuanKelompok::class, 'pkk_id', 'user_id');
+    }
+
     /**
      * Daftar AKK yang dipimpin oleh PKK ini
      */
