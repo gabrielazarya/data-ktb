@@ -9,7 +9,8 @@ class Kampus extends Model
 {
     use HasFactory;
 
-    protected $table      = 'kampus';
+    protected $table = 'kampus';
+
     protected $primaryKey = 'kampus_id';
 
     protected $fillable = [
@@ -42,6 +43,24 @@ class Kampus extends Model
     public function kelompokPemuridan()
     {
         return $this->hasMany(KelompokPemuridan::class, 'kampus_id', 'kampus_id');
+    }
+
+    public function groupAssignments()
+    {
+        return $this->hasMany(GroupCampus::class, 'kampus_id', 'kampus_id');
+    }
+
+    public function groups()
+    {
+        return $this->belongsToMany(
+            KelompokPemuridan::class,
+            'group_campuses',
+            'kampus_id',
+            'kelompok_id',
+            'kampus_id',
+            'kelompok_id'
+        )->withPivot(['group_campus_id', 'is_primary', 'assignment_type'])
+            ->withTimestamps();
     }
 
     /**

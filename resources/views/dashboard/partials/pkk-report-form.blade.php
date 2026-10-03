@@ -52,14 +52,25 @@
       @else
         <div class="checkbox-stack">
           @foreach ($group->anggota as $member)
-            <label class="checkbox-field">
-              <input
-                type="checkbox"
-                name="anggota_hadir[]"
-                value="{{ $member->user_id }}"
-                {{ in_array((int) $member->user_id, $selectedAttendance, true) ? 'checked' : '' }}
-              >
-              {{ $member->nama_lengkap }}
+            @php
+              $attendanceRow = $report?->relationLoaded('attendanceRows')
+                  ? $report->attendanceRows->firstWhere('user_id', $member->user_id)
+                  : null;
+              $selectedStatus = $attendanceRow?->status
+                  ?: (in_array((int) $member->user_id, $selectedAttendance, true) ? 'hadir' : 'alpa');
+            @endphp
+            <label class="checkbox-field attendance-field">
+              <span>
+                {{ $member->nama_lengkap }}
+                @if ($member->isStaff())
+                  <span class="badge staff">Staff</span>
+                @endif
+              </span>
+              <select name="attendance_statuses[{{ $member->user_id }}]" aria-label="Status {{ $member->nama_lengkap }}">
+                @foreach (['hadir' => 'Hadir', 'izin' => 'Izin', 'sakit' => 'Sakit', 'alpa' => 'Alpa'] as $statusValue => $statusLabel)
+                  <option value="{{ $statusValue }}" {{ $selectedStatus === $statusValue ? 'selected' : '' }}>{{ $statusLabel }}</option>
+                @endforeach
+              </select>
             </label>
           @endforeach
         </div>

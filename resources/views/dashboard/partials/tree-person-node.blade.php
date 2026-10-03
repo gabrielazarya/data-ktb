@@ -5,14 +5,14 @@
   $nodeCampusId = $campusId ?? $person->kampus_id;
   $nodeCampusName = $campusName ?? ($person->kampus?->nama_kampus ?: 'Tanpa kampus');
   $nodeAction = $isPkkNode ? 'person' : 'akk';
-  $nodeLabel = $isPkkNode ? 'PKK' : 'AKK';
+  $nodeLabel = $person->isStaff() ? 'Staff' : ($isPkkNode ? 'PKK' : 'AKK');
   $nodeMeta = $person->username.' - '.$nodeGroups->count().' kelompok';
   $nodeIsActive = $person->is_active ? '1' : '0';
 @endphp
 
 <li class="tree-v2-item">
   <article
-    class="tree-v2-node tree-v2-person {{ $isPkkNode ? 'is-pkk' : 'is-akk' }} is-actionable"
+    class="tree-v2-node tree-v2-person {{ $person->isStaff() ? 'is-staff' : ($isPkkNode ? 'is-pkk' : 'is-akk') }} is-actionable"
     data-tree-v2-node-action="{{ $nodeAction }}"
     data-node-name="{{ $person->nama_lengkap }}"
     data-node-meta="{{ $nodeMeta }}"
@@ -20,9 +20,11 @@
     data-campus-name="{{ $nodeCampusName }}"
     data-member-campus-id="{{ $person->kampus_id ?: '' }}"
     data-person-id="{{ $person->user_id }}"
+    data-is-staff="{{ $person->isStaff() ? '1' : '0' }}"
     data-role="{{ $nodeLabel }}"
     data-angkatan="{{ $person->angkatan ?: '' }}"
     data-is-active="{{ $nodeIsActive }}"
+    data-lifecycle-status="{{ $person->lifecycle_status ?: ($person->is_active ? 'active' : 'nonaktif') }}"
     data-search-name="{{ $person->nama_lengkap }}"
     tabindex="0"
     role="button"
@@ -30,7 +32,7 @@
   >
     <div class="tree-v2-node-head">
       <div class="tree-v2-name" title="{{ $person->nama_lengkap }}">{{ $person->nama_lengkap }}</div>
-      <span class="badge {{ $isPkkNode ? 'neutral' : '' }}">{{ $nodeLabel }}</span>
+      <span class="badge {{ $person->isStaff() ? 'staff' : ($isPkkNode ? 'neutral' : '') }}">{{ $nodeLabel }}</span>
     </div>
     <div class="tree-v2-meta">{{ $nodeMeta }}</div>
   </article>

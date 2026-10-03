@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\KelompokPemuridan;
+use App\Models\AuditLog;
 use App\Models\Kampus;
+use App\Models\KelompokPemuridan;
 use App\Models\Regio;
 use App\Models\User;
+use App\Services\GroupOperationsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -22,7 +24,7 @@ class TreeGroupController extends Controller
         $validated = $request->validate([
             'pemimpin_id' => [
                 'required',
-                Rule::exists('users', 'user_id')->where(fn ($query) => $query->whereIn('role', ['akk', 'pkk'])),
+                Rule::exists('users', 'user_id')->where(fn ($query) => $query->whereIn('role', ['akk', 'pkk', 'staff'])),
             ],
             'kampus_id' => ['nullable', Rule::exists('kampus', 'kampus_id')],
             'nama_kelompok' => ['nullable', 'string', 'max:256'],
@@ -37,10 +39,12 @@ class TreeGroupController extends Controller
         $leader = User::query()
             ->with('kampus')
             ->findOrFail($validated['pemimpin_id']);
+        abort_unless($leader->isLifecycleActive(), 422, 'Pemimpin kelompok tidak aktif.');
         $this->authorizePersonAccess($leader, $actor);
         $targetCampus = filled($validated['kampus_id'] ?? null)
             ? Kampus::query()->findOrFail($validated['kampus_id'])
             : null;
+        abort_if($targetCampus && ! $targetCampus->is_active, 422, 'Kampus tujuan tidak aktif.');
         $this->authorizeKampusAccess($targetCampus, $actor);
         $leader->loadMissing('kampus');
         $regioId = $this->resolveRegioId(
@@ -50,18 +54,23 @@ class TreeGroupController extends Controller
         $groupName = trim((string) ($validated['nama_kelompok'] ?? ''));
 
         $leader->forceFill([
-            'role' => 'pkk',
+            'role' => $leader->isStaff() ? 'staff' : 'pkk',
             'regio_id' => $regioId,
             'admin_tipe' => null,
         ])->save();
 
-        KelompokPemuridan::query()->create([
+        $createdGroup = KelompokPemuridan::query()->create([
             'nama_kelompok' => $groupName !== '' ? $groupName : 'Kelompok '.$leader->nama_lengkap,
             'kampus_id' => $targetCampus?->kampus_id ?: $leader->kampus_id,
             'regio_id' => $regioId,
             'pemimpin_id' => $leader->user_id,
             'is_active' => $request->boolean('is_active'),
         ]);
+
+        if ($targetCampus) {
+            app(GroupOperationsService::class)->assignCampus($createdGroup, $targetCampus->kampus_id, true, 'primary');
+        }
+        app(GroupOperationsService::class)->recordLeaderAssignment($leader, $createdGroup);
 
         return back()->with('success', 'Kelompok berhasil ditambahkan dengan pemimpin '.$leader->nama_lengkap.'.');
     }
@@ -84,16 +93,22 @@ class TreeGroupController extends Controller
                 ->findOrFail($context['kelompok_id'])
             : null;
         $this->authorizeGroupAccess($group, $actor);
+        abort_if($group && ! $group->is_active, 422, 'Kelompok tujuan tidak aktif.');
 
         $payload = $this->validateUserPayload($request, 'nama anggota', validateCampus: $group === null);
         $campus = $group === null && filled($payload['kampus_id'] ?? null)
             ? Kampus::query()->find($payload['kampus_id'])
             : null;
+        abort_if($campus && ! $campus->is_active, 422, 'Kampus tujuan tidak aktif.');
         $this->authorizeKampusAccess($campus, $actor);
-        $payload['role'] = 'akk';
+        $payload['role'] = ($payload['is_staff'] ?? false) ? 'staff' : 'akk';
+        unset($payload['is_staff']);
         $payload['pkk_id'] = $group?->pemimpin_id;
         $payload['kelompok_id'] = $group?->kelompok_id;
         $payload['kampus_id'] = $group ? $group->kampus_id : ($campus?->kampus_id ?? null);
+        if ($payload['role'] === 'staff') {
+            $payload['kampus_id'] = null;
+        }
         $payload['regio_id'] = $this->resolveRegioId(
             $actor,
             $group?->regio_id
@@ -103,6 +118,7 @@ class TreeGroupController extends Controller
         );
         $payload['admin_tipe'] = null;
         $payload['is_active'] = $request->boolean('is_active');
+        $payload['must_change_password'] = true;
         $payload['username'] = $this->temporaryUsername();
         $payload['password'] = 'user';
 
@@ -110,6 +126,15 @@ class TreeGroupController extends Controller
         $member->forceFill([
             'username' => $this->automaticUsername($member),
         ])->save();
+
+        app(GroupOperationsService::class)->recordMemberAssignment($member, $group);
+        if ($group?->pemimpin) {
+            app(GroupOperationsService::class)->recordMentorship($group->pemimpin, $member);
+        }
+        AuditLog::record('member.created', $member, [
+            'group_id' => $group?->kelompok_id,
+            'is_staff' => $member->isStaff(),
+        ]);
 
         return back()->with('success', $group
             ? 'Anggota berhasil ditambahkan ke '.$group->nama_kelompok.'.'
@@ -136,6 +161,7 @@ class TreeGroupController extends Controller
         $targetCampus = filled($validated['kampus_id'] ?? null)
             ? Kampus::query()->findOrFail($validated['kampus_id'])
             : null;
+        abort_if($targetCampus && ! $targetCampus->is_active, 422, 'Kampus tujuan tidak aktif.');
         $this->authorizeKampusAccess($targetCampus, $actor);
 
         $kelompok->update([
@@ -187,6 +213,14 @@ class TreeGroupController extends Controller
         $this->authorizeEditableMember($anggota, $actor);
 
         $payload = $this->validateUserPayload($request, 'nama anggota');
+        $staff = $payload['is_staff'] ?? $anggota->isStaff();
+        unset($payload['is_staff']);
+        $lifecycleStatus = $payload['lifecycle_status'] ?? ($anggota->lifecycle_status ?: 'active');
+        unset($payload['lifecycle_status']);
+        $payload['role'] = $staff ? 'staff' : ($anggota->kelompokDipimpin->isNotEmpty() ? 'pkk' : 'akk');
+        if ($staff) {
+            $payload['kampus_id'] = null;
+        }
         $campus = filled($payload['kampus_id'] ?? null)
             ? Kampus::query()->find($payload['kampus_id'])
             : null;
@@ -198,7 +232,9 @@ class TreeGroupController extends Controller
                 $actor,
                 $campus?->regio_id ?: $anggota->regio_id ?: $anggota->kelompokPemuridan?->regio_id
             ),
-            'is_active' => $request->boolean('is_active'),
+            'is_active' => $lifecycleStatus === 'active' && $request->boolean('is_active'),
+            'lifecycle_status' => $lifecycleStatus,
+            'lifecycle_changed_at' => $anggota->lifecycle_status !== $lifecycleStatus ? now() : $anggota->lifecycle_changed_at,
         ]);
 
         return back()->with('success', 'Anggota berhasil diperbarui.');
@@ -235,8 +271,10 @@ class TreeGroupController extends Controller
     {
         $rules = [
             'nama_lengkap' => ['required', 'string', 'max:256'],
+            'is_staff' => ['sometimes', 'boolean'],
             'angkatan' => ['nullable', 'integer', 'between:1900,'.((int) date('Y') + 1)],
             'is_active' => ['nullable', 'boolean'],
+            'lifecycle_status' => ['nullable', Rule::in(['prospek', 'active', 'cuti', 'lulus', 'pindah', 'nonaktif'])],
         ];
 
         if ($validateCampus) {
@@ -252,8 +290,10 @@ class TreeGroupController extends Controller
 
         $payload = Arr::only($validated, [
             'nama_lengkap',
+            'is_staff',
             'kampus_id',
             'angkatan',
+            'lifecycle_status',
         ]);
 
         foreach (['kampus_id', 'angkatan'] as $field) {
@@ -325,7 +365,7 @@ class TreeGroupController extends Controller
 
     private function authorizeEditableMember(User $member, User $actor): void
     {
-        abort_unless(in_array($member->role, ['akk', 'pkk'], true), 404);
+        abort_unless(in_array($member->role, ['akk', 'pkk', 'staff'], true), 404);
 
         $this->authorizePersonAccess($member, $actor);
     }
@@ -367,7 +407,7 @@ class TreeGroupController extends Controller
     {
         $member->refresh();
 
-        if (! in_array($member->role, ['akk', 'pkk'], true)) {
+        if (! in_array($member->role, ['akk', 'pkk', 'staff'], true)) {
             return;
         }
 
@@ -376,7 +416,7 @@ class TreeGroupController extends Controller
             ->exists();
 
         $member->forceFill([
-            'role' => $hasGroups ? 'pkk' : 'akk',
+            'role' => $member->isStaff() ? 'staff' : ($hasGroups ? 'pkk' : 'akk'),
             'admin_tipe' => null,
         ])->save();
     }

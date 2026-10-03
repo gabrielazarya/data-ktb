@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -69,7 +70,9 @@ class ProfileController extends Controller
 
         $user->update([
             'password' => $validated['password'],
+            'must_change_password' => false,
         ]);
+        AuditLog::record('profile.password_changed', $user);
 
         return back()->with('success', 'Password berhasil diubah.');
     }

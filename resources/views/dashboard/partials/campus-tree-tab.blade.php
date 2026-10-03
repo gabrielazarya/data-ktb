@@ -102,7 +102,7 @@
                         @foreach ($group['unassigned_akk'] as $row)
                           <li class="tree-v2-item">
                             <article
-                              class="tree-v2-node tree-v2-person is-akk is-actionable"
+                              class="tree-v2-node tree-v2-person {{ $row->isStaff() ? 'is-staff' : 'is-akk' }} is-actionable"
                               data-tree-v2-node-action="akk"
                               data-node-name="{{ $row->nama_lengkap }}"
                               data-node-meta="{{ $row->username }}{{ $row->angkatan ? ' - '.$row->angkatan : '' }}"
@@ -110,9 +110,11 @@
                               data-campus-name="{{ $row->kampus?->nama_kampus ?: $group['name'] }}"
                               data-member-campus-id="{{ $row->kampus_id ?: '' }}"
                               data-person-id="{{ $row->user_id }}"
-                              data-role="AKK"
+                              data-is-staff="{{ $row->isStaff() ? '1' : '0' }}"
+                              data-role="{{ $row->isStaff() ? 'Staff' : 'AKK' }}"
                               data-angkatan="{{ $row->angkatan ?: '' }}"
                               data-is-active="{{ $row->is_active ? '1' : '0' }}"
+                              data-lifecycle-status="{{ $row->lifecycle_status ?: ($row->is_active ? 'active' : 'nonaktif') }}"
                               data-search-name="{{ $row->nama_lengkap }}"
                               tabindex="0"
                               role="button"
@@ -120,7 +122,7 @@
                             >
                               <div class="tree-v2-node-head">
                                 <div class="tree-v2-name" title="{{ $row->nama_lengkap }}">{{ $row->nama_lengkap }}</div>
-                                <span class="badge">AKK</span>
+                                <span class="badge {{ $row->isStaff() ? 'staff' : '' }}">{{ $row->isStaff() ? 'Staff' : 'AKK' }}</span>
                               </div>
                               <div class="tree-v2-meta">{{ $row->username }}{{ $row->angkatan ? ' - '.$row->angkatan : '' }}</div>
                             </article>

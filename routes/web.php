@@ -1,13 +1,16 @@
 <?php
 
-use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AccessSwitchController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FollowUpController;
+use App\Http\Controllers\GroupOperationsController;
 use App\Http\Controllers\KampusController;
 use App\Http\Controllers\PkkReportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegioController;
+use App\Http\Controllers\StaffController;
 use App\Http\Controllers\TreeGroupController;
 use Illuminate\Support\Facades\Route;
 
@@ -44,17 +47,28 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/dashboard/regio', [RegioController::class, 'store'])->name('dashboard.regio.store');
     Route::put('/dashboard/regio/{regio}', [RegioController::class, 'update'])->name('dashboard.regio.update');
     Route::get('/dashboard/pengguna', [DashboardController::class, 'pengguna'])->name('dashboard.pengguna');
+    Route::get('/dashboard/staff', [DashboardController::class, 'staff'])->name('dashboard.staff');
+    Route::post('/dashboard/staff', [StaffController::class, 'store'])->name('dashboard.staff.store');
     Route::post('/dashboard/pengguna', [AdminUserController::class, 'store'])->name('dashboard.pengguna.store');
     Route::put('/dashboard/pengguna/{user}', [AdminUserController::class, 'update'])->name('dashboard.pengguna.update');
     Route::delete('/dashboard/pengguna/{user}', [AdminUserController::class, 'destroy'])->name('dashboard.pengguna.destroy');
     Route::post('/dashboard/pengguna/{user}/akses', [AccessSwitchController::class, 'switchToAdmin'])->name('dashboard.pengguna.switch-access');
     Route::post('/dashboard/akses/kembali', [AccessSwitchController::class, 'returnToSuperAdmin'])->name('dashboard.access.return');
     Route::get('/dashboard/anggota-ktb', [DashboardController::class, 'anggotaKtb'])->name('dashboard.anggota-ktb');
+    Route::get('/dashboard/anggota-ktb/export', [DashboardController::class, 'exportMembers'])->name('dashboard.anggota-ktb.export');
     Route::get('/dashboard/pohon-pemuridan', [DashboardController::class, 'pohon'])->name('dashboard.pohon');
+    Route::get('/dashboard/tindak-lanjut', [DashboardController::class, 'followUps'])->name('dashboard.follow-ups');
+    Route::put('/dashboard/tindak-lanjut/{followUp}', [FollowUpController::class, 'update'])->name('dashboard.follow-ups.update');
     Route::post('/dashboard/pohon-pemuridan/kelompok', [TreeGroupController::class, 'storeGroup'])->name('dashboard.pohon.kelompok.store');
     Route::put('/dashboard/pohon-pemuridan/kelompok/{kelompok}', [TreeGroupController::class, 'updateGroup'])->name('dashboard.pohon.kelompok.update');
     Route::delete('/dashboard/pohon-pemuridan/kelompok/{kelompok}', [TreeGroupController::class, 'destroyGroup'])->name('dashboard.pohon.kelompok.destroy');
+    Route::post('/dashboard/pohon-pemuridan/kelompok/{kelompok}/arsip', [GroupOperationsController::class, 'archiveGroup'])->name('dashboard.pohon.kelompok.archive');
+    Route::post('/dashboard/pohon-pemuridan/kelompok/{kelompok}/pemimpin', [GroupOperationsController::class, 'reassignLeader'])->name('dashboard.pohon.kelompok.leader');
+    Route::post('/dashboard/pohon-pemuridan/kelompok/{kelompok}/kampus', [GroupOperationsController::class, 'assignCampus'])->name('dashboard.pohon.kelompok.campus.assign');
     Route::post('/dashboard/pohon-pemuridan/anggota', [TreeGroupController::class, 'storeMember'])->name('dashboard.pohon.anggota.store');
     Route::put('/dashboard/pohon-pemuridan/anggota/{anggota}', [TreeGroupController::class, 'updateMember'])->name('dashboard.pohon.anggota.update');
     Route::delete('/dashboard/pohon-pemuridan/anggota/{anggota}', [TreeGroupController::class, 'destroyMember'])->name('dashboard.pohon.anggota.destroy');
+    Route::post('/dashboard/pohon-pemuridan/anggota/{anggota}/pindah', [GroupOperationsController::class, 'transferMember'])->name('dashboard.pohon.anggota.transfer');
+    Route::post('/dashboard/pohon-pemuridan/anggota/{anggota}/arsip', [GroupOperationsController::class, 'archiveMember'])->name('dashboard.pohon.anggota.archive');
+    Route::post('/dashboard/pohon-pemuridan/anggota/{anggota}/status', [GroupOperationsController::class, 'changeMemberLifecycle'])->name('dashboard.pohon.anggota.status');
 });

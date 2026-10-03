@@ -30,16 +30,16 @@
             <tr>
               <td>
                 <strong>{{ $member->nama_lengkap }}</strong>
-                <div class="muted">{{ $selectedKampus->singkatan ?: $selectedKampus->nama_kampus }}</div>
+                <div class="muted">{{ $member->isStaff() ? 'Staff lintas kampus' : ($member->kampus?->singkatan ?: $member->kampus?->nama_kampus ?: 'Tanpa kampus') }}</div>
               </td>
               <td>{{ $member->username }}</td>
-              <td><span class="badge neutral">{{ $roleNames[$member->role] ?? strtoupper($member->role) }}</span></td>
+              <td><span class="badge {{ $member->isStaff() ? 'staff' : 'neutral' }}">{{ $roleNames[$member->role] ?? strtoupper($member->role) }}</span></td>
               <td>{{ $member->angkatan ?: '-' }}</td>
               <td>{{ $member->pkkLeader?->nama_lengkap ?: '-' }}</td>
               <td>{{ $member->kelompokPemuridan?->nama_kelompok ?: '-' }}</td>
               <td>
-                <span class="badge {{ $member->is_active ? '' : 'warning' }}">
-                  {{ $member->is_active ? 'Aktif' : 'Nonaktif' }}
+                <span class="badge {{ $member->is_active && ($member->lifecycle_status ?? 'active') === 'active' ? '' : 'warning' }}">
+                  {{ $member->lifecycle_status && $member->lifecycle_status !== 'active' ? ucfirst($member->lifecycle_status) : ($member->is_active ? 'Aktif' : 'Nonaktif') }}
                 </span>
               </td>
             </tr>

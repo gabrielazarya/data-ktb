@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Regio;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -17,10 +18,11 @@ class RegioController extends Controller
 
         $validated = $this->validateRegio($request);
 
-        Regio::query()->create([
+        $regio = Regio::query()->create([
             ...$this->payload($validated),
             'is_active' => true,
         ]);
+        AuditLog::record('regio.created', $regio);
 
         return back()->with('success', 'Data regio berhasil ditambahkan.');
     }
@@ -32,6 +34,7 @@ class RegioController extends Controller
         $validated = $this->validateRegio($request, $regio);
 
         $regio->update($this->payload($validated));
+        AuditLog::record('regio.updated', $regio);
 
         return back()->with('success', 'Data regio berhasil diperbarui.');
     }

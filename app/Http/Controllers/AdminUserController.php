@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,11 +19,13 @@ class AdminUserController extends Controller
             'username' => $this->temporaryUsername(),
             'password' => 'admin',
             'is_active' => true,
+            'must_change_password' => true,
         ]));
 
         $user->forceFill([
             'username' => $this->automaticUsername($user),
         ])->save();
+        AuditLog::record('admin.created', $user);
 
         return back()->with('success', 'Pengguna admin berhasil ditambahkan.');
     }
@@ -33,6 +36,7 @@ class AdminUserController extends Controller
         $this->authorizeAdminUser($user);
 
         $user->update($this->payload($this->validateUser($request)));
+        AuditLog::record('admin.updated', $user);
 
         return back()->with('success', 'Pengguna admin berhasil diperbarui.');
     }
@@ -45,6 +49,7 @@ class AdminUserController extends Controller
         abort_if(Auth::id() === $user->getKey(), 422, 'Akun yang sedang digunakan tidak bisa dihapus.');
 
         $user->delete();
+        AuditLog::record('admin.deleted', null, ['deleted_user_id' => $user->user_id]);
 
         return back()->with('success', 'Pengguna admin berhasil dihapus.');
     }

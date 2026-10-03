@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Kampus;
 use App\Models\Regio;
 use App\Models\User;
@@ -19,6 +20,7 @@ class KampusController extends Controller
         $validated = $this->validateKampus($request, actor: $actor);
 
         Kampus::query()->create($this->payload($request, $validated, $actor));
+        AuditLog::record('campus.created', null, ['name' => $validated['nama_kampus']]);
 
         return back()->with('success', 'Data kampus berhasil ditambahkan.');
     }
@@ -31,6 +33,7 @@ class KampusController extends Controller
         $validated = $this->validateKampus($request, $kampus, $actor);
 
         $kampus->update($this->payload($request, $validated, $actor));
+        AuditLog::record('campus.updated', $kampus);
 
         return back()->with('success', 'Data kampus berhasil diperbarui.');
     }
@@ -40,9 +43,10 @@ class KampusController extends Controller
         $actor = $this->authorizeManageData();
         $this->authorizeKampusAccess($kampus, $actor);
 
-        $kampus->delete();
+        $kampus->forceFill(['is_active' => false])->save();
+        AuditLog::record('campus.archived', $kampus);
 
-        return back()->with('success', 'Data kampus berhasil dihapus.');
+        return back()->with('success', 'Data kampus berhasil diarsipkan.');
     }
 
     private function validateKampus(Request $request, ?Kampus $kampus = null, ?User $actor = null): array

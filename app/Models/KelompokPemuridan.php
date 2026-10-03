@@ -10,6 +10,7 @@ class KelompokPemuridan extends Model
     use HasFactory;
 
     protected $table = 'kelompok_pemuridan';
+
     protected $primaryKey = 'kelompok_id';
 
     protected $fillable = [
@@ -45,6 +46,49 @@ class KelompokPemuridan extends Model
     public function anggota()
     {
         return $this->hasMany(User::class, 'kelompok_id', 'kelompok_id');
+    }
+
+    public function groupMemberships()
+    {
+        return $this->hasMany(GroupMembership::class, 'kelompok_id', 'kelompok_id');
+    }
+
+    public function currentMemberships()
+    {
+        return $this->groupMemberships()->active();
+    }
+
+    public function campusAssignments()
+    {
+        return $this->hasMany(GroupCampus::class, 'kelompok_id', 'kelompok_id');
+    }
+
+    public function campuses()
+    {
+        return $this->belongsToMany(
+            Kampus::class,
+            'group_campuses',
+            'kelompok_id',
+            'kampus_id',
+            'kelompok_id',
+            'kampus_id'
+        )->withPivot(['group_campus_id', 'is_primary', 'assignment_type'])
+            ->withTimestamps();
+    }
+
+    public function leaderHistories()
+    {
+        return $this->hasMany(GroupLeaderHistory::class, 'kelompok_id', 'kelompok_id');
+    }
+
+    public function currentLeaderHistory()
+    {
+        return $this->leaderHistories()->current();
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
     }
 
     public function laporanPertemuan()

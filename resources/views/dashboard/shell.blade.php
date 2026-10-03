@@ -4,6 +4,7 @@
     'super_admin' => 'Super Admin',
     'admin' => 'Admin',
     'pkk' => 'PKK',
+    'staff' => 'Staff',
     'akk' => 'AKK',
   ];
   $accountStatus = $user->is_active ? 'Aktif' : 'Nonaktif';
@@ -981,6 +982,23 @@
       border: 1px solid var(--line);
       border-radius: 8px;
       background: rgba(255, 255, 255, 0.76);
+    }
+
+    .attendance-field {
+      justify-content: space-between;
+      width: 100%;
+      padding: 6px 4px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .attendance-field:last-child {
+      border-bottom: 0;
+    }
+
+    .attendance-field select {
+      width: 112px;
+      min-height: 34px;
+      padding: 5px 8px;
     }
 
     .report-form {
@@ -2358,6 +2376,139 @@
       }
     }
 
+    /* Staff are campus-independent; keep their marker visible in every member view. */
+    .badge.staff {
+      background: #fce7f3;
+      border: 1px solid #f9a8d4;
+      color: #9d174d;
+    }
+
+    .tree-v2-person.is-staff {
+      /* The dashboard uses a dark canvas. Keep staff cards dark enough for
+         their labels, while the magenta accent still separates them from
+         PKK/AKK cards. */
+      background: linear-gradient(150deg, #4a1f3d, #2f1c34);
+      border-color: #f472b6;
+      box-shadow: 0 0 0 1px rgba(244, 114, 182, 0.16), 0 18px 34px rgba(0, 0, 0, 0.3);
+    }
+
+    .tree-v2-person.is-staff .tree-v2-name {
+      color: #fff1f7;
+    }
+
+    .tree-v2-person.is-staff .tree-v2-meta {
+      color: #f6c7dc;
+    }
+
+    .tree-v2-person.is-staff .badge.staff {
+      background: #f9a8d4;
+      border-color: #f472b6;
+      color: #4a1131;
+    }
+
+    .staff-panel-head {
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .staff-panel-head .btn {
+      flex: 0 0 auto;
+      margin-top: 4px;
+    }
+
+    .staff-page-description {
+      max-width: 780px;
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 0.98rem;
+      line-height: 1.55;
+    }
+
+    .staff-table-wrap {
+      margin-top: 4px;
+    }
+
+    .staff-table {
+      min-width: 640px;
+      table-layout: fixed;
+    }
+
+    .staff-table .staff-col-name { width: 36%; }
+    .staff-table .staff-col-username { width: 27%; }
+    .staff-table .staff-col-status { width: 18%; }
+    .staff-table .staff-col-groups { width: 19%; }
+
+    .staff-table th,
+    .staff-table td {
+      padding: 14px 18px;
+      vertical-align: middle;
+    }
+
+    .staff-table th {
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .staff-table tbody tr {
+      transition: background-color 0.16s ease;
+    }
+
+    .staff-table tbody tr:hover {
+      background: rgba(94, 234, 212, 0.08);
+    }
+
+    .staff-username {
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .staff-group-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 34px;
+      min-height: 28px;
+      padding: 3px 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--navy);
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .follow-up-status-form select {
+      min-width: 118px;
+      min-height: 34px;
+      padding: 5px 8px;
+    }
+
+    [data-bs-theme="dark"] .badge.staff {
+      background: rgba(244, 114, 182, 0.16);
+      border-color: rgba(244, 114, 182, 0.38);
+      color: #f9a8d4;
+    }
+
+    [data-bs-theme="dark"] .tree-v2-person.is-staff {
+      background: linear-gradient(150deg, #3b1f33, #4a203b);
+      border-color: #be185d;
+    }
+
+    [data-bs-theme="dark"] .staff-group-count {
+      background: rgba(122, 183, 255, 0.08);
+    }
+
+    @media (max-width: 640px) {
+      .staff-panel-head {
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .staff-panel-head .btn {
+        margin-top: 0;
+      }
+    }
+
     .sidebar-head {
       display: flex;
       align-items: center;
@@ -2583,12 +2734,15 @@
           @if ($user->isSuperAdmin())
             <a class="{{ $activePage === 'pengguna' ? 'active' : '' }}" href="{{ route('dashboard.pengguna') }}">Pengguna</a>
             <a class="{{ $activePage === 'regio' ? 'active' : '' }}" href="{{ route('dashboard.regio') }}">Regio</a>
+            <a class="{{ $activePage === 'tindak-lanjut' ? 'active' : '' }}" href="{{ route('dashboard.follow-ups') }}">Tindak Lanjut</a>
           @else
             @php
               $isCampusNavOpen = in_array($activePage, ['kampus', 'kampus-detail'], true);
             @endphp
             <a class="{{ $activePage === 'pohon' ? 'active' : '' }}" href="{{ route('dashboard.pohon') }}">Pohon Pemuridan</a>
             <a class="{{ $activePage === 'anggota-ktb' ? 'active' : '' }}" href="{{ route('dashboard.anggota-ktb') }}">Anggota KTB</a>
+            <a class="{{ $activePage === 'staff' ? 'active' : '' }}" href="{{ route('dashboard.staff') }}">Daftar Staff</a>
+            <a class="{{ $activePage === 'tindak-lanjut' ? 'active' : '' }}" href="{{ route('dashboard.follow-ups') }}">Tindak Lanjut</a>
             <details class="nav-group" {{ $isCampusNavOpen ? 'open' : '' }}>
               <summary class="{{ $isCampusNavOpen ? 'active' : '' }}">
                 <span>Kampus</span>
@@ -2610,9 +2764,10 @@
             </details>
           @endif
         @endif
-        @if ($user->isPKK())
+        @if ($user->canLeadGroups())
           <a class="{{ $activePage === 'pkk-kelompok' ? 'active' : '' }}" href="{{ route('pkk.kelompok') }}">Kelompok Saya</a>
           <a class="{{ $activePage === 'pkk-pohon' ? 'active' : '' }}" href="{{ route('pkk.pohon') }}">Pohon Saya</a>
+          <a class="{{ $activePage === 'tindak-lanjut' ? 'active' : '' }}" href="{{ route('dashboard.follow-ups') }}">Tindak Lanjut</a>
         @endif
       </nav>
 
@@ -2668,6 +2823,13 @@
             <span>{{ session('success') }}</span>
             <button class="toast-close" type="button" data-toast-close aria-label="Tutup notifikasi">x</button>
           </div>
+        </div>
+      @endif
+
+      @if (session('warning'))
+        <div class="alert" role="status">
+          {{ session('warning') }}
+          <a href="{{ route('dashboard.profile') }}#ubah-password">Ubah password sekarang</a>
         </div>
       @endif
 
@@ -2750,6 +2912,7 @@
               $memberRoleCounts = [
                 'pkk' => $roleCounts['pkk'] ?? 0,
                 'akk' => $roleCounts['akk'] ?? 0,
+                'staff' => $roleCounts['staff'] ?? 0,
               ];
               $maxMemberRoleCount = max(1, ...array_values($memberRoleCounts));
               $activeCampusCount = $campusSummaries->where('is_active', true)->count();
@@ -2759,7 +2922,7 @@
               <div class="panel-head">
                 <div>
                   <span class="eyebrow">Komposisi KTB</span>
-                  <h2>PKK dan AKK di Regio Ini</h2>
+                  <h2>PKK, AKK, dan Staff di Regio Ini</h2>
                 </div>
               </div>
               <div class="role-stack">
@@ -2844,7 +3007,7 @@
                 </div>
               </div>
             </article>
-            @if ($user->isPKK())
+            @if ($user->canLeadGroups())
               <article class="panel">
                 <div class="panel-head">
                   <div>
@@ -3176,18 +3339,18 @@
                             <div class="modal-panel is-small" role="dialog" aria-modal="true" aria-labelledby="modal-kampus-delete-title-{{ $kampus->kampus_id }}">
                               <div class="modal-head">
                                 <div>
-                                  <span class="eyebrow">Hapus</span>
+                                  <span class="eyebrow">Arsipkan</span>
                                   <h2 id="modal-kampus-delete-title-{{ $kampus->kampus_id }}">Kampus</h2>
                                 </div>
                                 <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
                               </div>
                               <div class="modal-body">
-                                <p class="muted">Hapus {{ $kampus->nama_kampus }}? Pengguna terkait akan menjadi tanpa kampus.</p>
+                                <p class="muted">Arsipkan {{ $kampus->nama_kampus }}? Data pengguna dan riwayat kelompok tetap disimpan.</p>
                                 <form method="POST" action="{{ route('dashboard.kampus.destroy', $kampus) }}" class="inline-delete">
                                   @csrf
                                   @method('DELETE')
                                   <div class="form-actions">
-                                    <button class="btn is-compact is-danger" type="submit">Hapus Kampus</button>
+                                    <button class="btn is-compact is-danger" type="submit">Arsipkan Kampus</button>
                                     <button class="btn is-compact" type="button" data-modal-close>Batal</button>
                                   </div>
                                 </form>
@@ -3248,6 +3411,7 @@
                     <th>Admin</th>
                     <th>PKK</th>
                     <th>AKK</th>
+                    <th>Staff</th>
                     @if ($canManageData)
                       <th>Aksi</th>
                     @endif
@@ -3262,6 +3426,7 @@
                       <td>{{ number_format($regio->admin_users, 0, ',', '.') }}</td>
                       <td>{{ number_format($regio->pkk_users, 0, ',', '.') }}</td>
                       <td>{{ number_format($regio->akk_users, 0, ',', '.') }}</td>
+                      <td>{{ number_format($regio->staff_users, 0, ',', '.') }}</td>
                       @if ($canManageData)
                         <td>
                           <button class="btn icon-btn" type="button" data-modal-open="modal-regio-edit-{{ $regio->regio_id }}" title="Edit" aria-label="Edit {{ $regio->nama_regio }}">
@@ -3294,6 +3459,100 @@
             </div>
           @endif
         </section>
+      @elseif ($activePage === 'staff' && $canSeeAdminData)
+        <section class="panel" id="daftar-staff">
+          <div class="panel-head table-panel-head staff-panel-head">
+            <div class="table-panel-title">
+              <span class="eyebrow">Direktori Pelayanan</span>
+              <h2>Daftar Staff</h2>
+              <p class="staff-page-description">Staff tidak terikat pada kampus tertentu dan dapat memimpin kelompok di kampus mana pun.</p>
+            </div>
+            @if ($canManageData)
+              <button class="btn is-compact" type="button" data-modal-open="modal-staff-create">Tambah Staff</button>
+            @endif
+          </div>
+          @if ($staffRows->isEmpty())<div class="empty-state">Belum ada Staff yang terdaftar.</div>@else
+            <div class="table-wrap staff-table-wrap">
+              <table class="table staff-table">
+                <colgroup>
+                  <col class="staff-col-name">
+                  <col class="staff-col-username">
+                  <col class="staff-col-status">
+                  <col class="staff-col-groups">
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th scope="col">Nama</th>
+                    <th scope="col">Username</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Kelompok dipimpin</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @foreach ($staffRows as $staffRow)
+                    <tr>
+                      <td><strong>{{ $staffRow->nama_lengkap }}</strong></td>
+                      <td><span class="staff-username">{{ $staffRow->username }}</span></td>
+                      <td><span class="badge {{ $staffRow->is_active ? '' : 'warning' }}">{{ $staffRow->is_active ? 'Aktif' : 'Nonaktif' }}</span></td>
+                      <td><span class="staff-group-count">{{ number_format($staffRow->kelompok_dipimpin_count, 0, ',', '.') }}</span></td>
+                    </tr>
+                  @endforeach
+                </tbody>
+              </table>
+            </div>
+          @endif
+        </section>
+        @if ($canManageData)<div class="modal" id="modal-staff-create" hidden><div class="modal-panel" role="dialog" aria-modal="true"><div class="modal-head"><h2>Staff Baru</h2><button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button></div><div class="modal-body"><form method="POST" action="{{ route('dashboard.staff.store') }}" class="compact-edit-form">@csrf<div class="field"><label for="staff-name">Nama Staff</label><input id="staff-name" type="text" name="nama_lengkap" value="{{ old('nama_lengkap') }}" maxlength="256" required></div><label class="checkbox-field"><input type="hidden" name="is_active" value="0"><input type="checkbox" name="is_active" value="1" checked> Aktif</label><div class="form-actions"><button class="btn is-compact" type="submit">Simpan Staff</button><button class="btn is-compact" type="button" data-modal-close>Batal</button></div></form></div></div></div>@endif
+      @elseif ($activePage === 'tindak-lanjut')
+        <section class="panel" id="daftar-tindak-lanjut">
+          <div class="panel-head table-panel-head">
+            <div class="table-panel-title">
+              <span class="eyebrow">Pendampingan</span>
+              <h2>Tindak Lanjut Anggota</h2>
+              <p class="staff-page-description">Daftar anggota yang perlu dihubungi setelah absen atau membutuhkan pendampingan.</p>
+            </div>
+          </div>
+          @if ($followUpRows->isEmpty())
+            <div class="empty-state">Belum ada tindak lanjut terbuka.</div>
+          @else
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr><th>Anggota</th><th>Kelompok</th><th>Alasan</th><th>Batas waktu</th><th>Penanggung jawab</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                  @foreach ($followUpRows as $followUp)
+                    @php
+                      $canUpdateFollowUp = $canManageData || (int) $followUp->assigned_to === (int) $user->user_id || (int) $followUp->created_by === (int) $user->user_id;
+                    @endphp
+                    <tr>
+                      <td><strong>{{ $followUp->member?->nama_lengkap ?: 'Anggota tidak ditemukan' }}</strong><div class="muted">{{ $followUp->title }}</div></td>
+                      <td>{{ $followUp->kelompok?->nama_kelompok ?: '-' }}</td>
+                      <td>{{ $followUp->description ?: ($followUp->reason ?: '-') }}</td>
+                      <td>{{ $followUp->due_at?->format('d/m/Y') ?: '-' }}</td>
+                      <td>{{ $followUp->owner?->nama_lengkap ?: '-' }}</td>
+                      <td>
+                        @if ($canUpdateFollowUp)
+                          <form method="POST" action="{{ route('dashboard.follow-ups.update', $followUp) }}" class="follow-up-status-form">
+                            @csrf
+                            @method('PUT')
+                            <select name="status" aria-label="Status tindak lanjut {{ $followUp->member?->nama_lengkap }}" onchange="this.form.submit()">
+                              @foreach ([\App\Models\FollowUpTask::STATUS_OPEN => 'Terbuka', \App\Models\FollowUpTask::STATUS_IN_PROGRESS => 'Berjalan', \App\Models\FollowUpTask::STATUS_DONE => 'Selesai', \App\Models\FollowUpTask::STATUS_CANCELLED => 'Dibatalkan'] as $statusValue => $statusLabel)
+                                <option value="{{ $statusValue }}" {{ $followUp->status === $statusValue ? 'selected' : '' }}>{{ $statusLabel }}</option>
+                              @endforeach
+                            </select>
+                          </form>
+                        @else
+                          <span class="badge neutral">{{ ucfirst(str_replace('_', ' ', $followUp->status)) }}</span>
+                        @endif
+                      </td>
+                    </tr>
+                  @endforeach
+                </tbody>
+              </table>
+            </div>
+          @endif
+        </section>
       @elseif (in_array($activePage, ['pengguna', 'anggota-ktb'], true) && $canSeeAdminData)
         @php
           $directoryRows = $activePage === 'anggota-ktb' ? $memberRows : $userRows;
@@ -3308,8 +3567,8 @@
           $useDirectoryRoleFilter = in_array($activePage, ['pengguna', 'anggota-ktb'], true);
           $directoryDefaultRole = $activePage === 'pengguna' ? 'admin' : '';
           $directoryRoleFilterOptions = $activePage === 'anggota-ktb'
-              ? ['' => 'Semua', 'pkk' => 'PKK', 'akk' => 'AKK']
-              : ['admin' => 'Admin', 'pkk' => 'PKK', 'akk' => 'AKK', '' => 'Semua'];
+              ? ['' => 'Semua', 'pkk' => 'PKK', 'staff' => 'Staff', 'akk' => 'AKK']
+              : ['admin' => 'Admin', 'pkk' => 'PKK', 'staff' => 'Staff', 'akk' => 'AKK', '' => 'Semua'];
           $directoryColspan = 6 + ($directoryHasActions ? 1 : 0);
         @endphp
 
@@ -3340,6 +3599,9 @@
               @endif
               @if ($directoryCanManageAdmins)
                 <button class="btn is-compact" type="button" data-modal-open="modal-admin-user-create">Tambah Admin</button>
+              @endif
+              @if ($activePage === 'anggota-ktb')
+                <a class="btn is-compact" href="{{ route('dashboard.anggota-ktb.export') }}">Unduh CSV</a>
               @endif
             </div>
           </div>
@@ -3399,12 +3661,12 @@
                         <div class="muted">{{ $row->kampus?->singkatan ?: '-' }}</div>
                       </td>
                       <td>{{ $row->username }}</td>
-                      <td><span class="badge neutral">{{ $roleNames[$row->role] ?? strtoupper($row->role) }}</span></td>
+                      <td><span class="badge {{ $row->role === 'staff' ? 'staff' : 'neutral' }}">{{ $roleNames[$row->role] ?? strtoupper($row->role) }}</span></td>
                       <td>{{ $row->regio?->nama_regio ?: '-' }}</td>
                       <td>{{ $row->angkatan ?: '-' }}</td>
                       <td>
-                        <span class="badge {{ $row->is_active ? '' : 'warning' }}">
-                          {{ $row->is_active ? 'Aktif' : 'Nonaktif' }}
+                        <span class="badge {{ $row->is_active && ($row->lifecycle_status ?? 'active') === 'active' ? '' : 'warning' }}">
+                          {{ $row->lifecycle_status && $row->lifecycle_status !== 'active' ? ucfirst($row->lifecycle_status) : ($row->is_active ? 'Aktif' : 'Nonaktif') }}
                         </span>
                       </td>
                       @if ($directoryHasActions)
@@ -3562,7 +3824,7 @@
             </div>
           @endif
         </section>
-      @elseif ($activePage === 'pkk-kelompok' && $user->isPKK())
+      @elseif ($activePage === 'pkk-kelompok' && $user->canLeadGroups())
         <section class="pkk-group-list">
           @forelse ($pkkGroups as $pkkGroup)
             @php
@@ -3580,6 +3842,9 @@
                 <div class="pkk-summary-item">
                   <span>Kampus</span>
                   <strong>{{ $pkkGroup->kampus?->nama_kampus ?: 'Tanpa kampus' }}</strong>
+                  @if ($pkkGroup->campusAssignments->count() > 1)
+                    <div class="muted">Pelayanan: {{ $pkkGroup->campusAssignments->map(fn ($assignment) => $assignment->kampus?->singkatan ?: $assignment->kampus?->nama_kampus)->filter()->join(', ') }}</div>
+                  @endif
                 </div>
                 <div class="pkk-summary-item is-number">
                   <span>Anggota</span>
@@ -3592,10 +3857,13 @@
               </div>
 
               <div class="row-actions panel-actions">
-                <button class="btn is-compact" type="button" data-modal-open="{{ $createReportModalId }}">Buat Laporan</button>
+                @if ($pkkGroup->is_active)
+                  <button class="btn is-compact" type="button" data-modal-open="{{ $createReportModalId }}">Buat Laporan</button>
+                @endif
                 <a class="btn is-compact" href="{{ route('pkk.pohon') }}">Lihat Pohon</a>
               </div>
 
+              @if ($pkkGroup->is_active)
               <div class="modal" id="{{ $createReportModalId }}" hidden>
                 <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="{{ $createReportModalId }}-title">
                   <div class="modal-head">
@@ -3614,6 +3882,7 @@
                   </div>
                 </div>
               </div>
+              @endif
 
               <div class="pkk-group-body">
                 <section class="pkk-subpanel" aria-labelledby="pkk-members-{{ $pkkGroup->kelompok_id }}">
@@ -3628,7 +3897,7 @@
                             <strong>{{ $member->nama_lengkap }}</strong>
                             <span>{{ $member->username }}{{ $member->angkatan ? ' - '.$member->angkatan : '' }}</span>
                           </div>
-                          <span class="badge neutral">{{ $member->role === 'pkk' ? 'PKK' : 'AKK' }}</span>
+                          <span class="badge {{ $member->isStaff() ? 'staff' : 'neutral' }}">{{ $member->isStaff() ? 'Staff' : ($member->role === 'pkk' ? 'PKK' : 'AKK') }}</span>
                         </li>
                       @endforeach
                     </ul>
@@ -3658,7 +3927,7 @@
                               $attendanceIds = collect($report->anggota_hadir ?? [])->map(fn ($id) => (int) $id);
                               $attendanceNames = $pkkGroup->anggota
                                   ->whereIn('user_id', $attendanceIds)
-                                  ->pluck('nama_lengkap')
+                                  ->map(fn ($member) => $member->nama_lengkap.($member->isStaff() ? ' (Staff)' : ''))
                                   ->values();
                             @endphp
                             <tr>
@@ -3754,7 +4023,7 @@
             </article>
           @endforelse
         </section>
-      @elseif ($activePage === 'pkk-pohon' && $user->isPKK())
+      @elseif ($activePage === 'pkk-pohon' && $user->canLeadGroups())
         @include('dashboard.partials.campus-tree-tab')
       @elseif (in_array($activePage, ['pohon', 'kampus-detail'], true) && $canSeeAdminData)
         @if ($activePage === 'kampus-detail' && $selectedKampus)
@@ -3814,7 +4083,10 @@
                   <button class="btn is-compact" type="button" data-tree-v2-action-do="add_group" hidden>Tambah Kelompok</button>
                   <button class="btn is-compact" type="button" data-tree-v2-action-do="add_member" hidden>Tambah Anggota</button>
                   <button class="btn is-compact" type="button" data-tree-v2-action-do="edit_member" hidden>Edit Anggota</button>
+                  <button class="btn is-compact" type="button" data-tree-v2-action-do="transfer_member" hidden>Pindah Kelompok</button>
                   <button class="btn is-compact" type="button" data-tree-v2-action-do="edit_group" hidden>Edit Kelompok</button>
+                  <button class="btn is-compact" type="button" data-tree-v2-action-do="reassign_leader" hidden>Ganti Pemimpin</button>
+                  <button class="btn is-compact" type="button" data-tree-v2-action-do="assign_campus" hidden>Tambah Kampus Pelayanan</button>
                   <button class="btn is-compact is-danger" type="button" data-tree-v2-action-do="delete_member" hidden>Hapus Anggota</button>
                   <button class="btn is-compact is-danger" type="button" data-tree-v2-action-do="delete_group" hidden>Hapus Kelompok</button>
                 @endif
@@ -3907,6 +4179,7 @@
                     </div>
                     <div class="field is-full">
                       <label for="tree-member-name">Nama Anggota</label>
+                      <label class="checkbox-field"><input type="hidden" name="is_staff" value="0"><input type="checkbox" name="is_staff" value="1" {{ old('is_staff') ? 'checked' : '' }}> Staff (tanpa kampus, dapat memimpin lintas kampus)</label>
                       <input id="tree-member-name" type="text" name="nama_lengkap" value="{{ old('nama_lengkap') }}" maxlength="256" required>
                     </div>
                     <label class="checkbox-field">
@@ -3966,8 +4239,17 @@
                       <label for="tree-member-edit-angkatan">Angkatan</label>
                       <input id="tree-member-edit-angkatan" type="number" name="angkatan" value="{{ old('_modal_id') === 'tree-member-edit-modal' ? old('angkatan') : '' }}" min="1900" max="{{ date('Y') + 1 }}" data-tree-member-edit-angkatan>
                     </div>
+                    <div class="field">
+                      <label for="tree-member-edit-lifecycle">Status anggota</label>
+                      <select id="tree-member-edit-lifecycle" name="lifecycle_status" data-tree-member-edit-lifecycle>
+                        @foreach (['prospek' => 'Prospek', 'active' => 'Aktif', 'cuti' => 'Cuti', 'lulus' => 'Lulus', 'pindah' => 'Pindah', 'nonaktif' => 'Nonaktif'] as $statusValue => $statusLabel)
+                          <option value="{{ $statusValue }}" {{ old('lifecycle_status', 'active') === $statusValue ? 'selected' : '' }}>{{ $statusLabel }}</option>
+                        @endforeach
+                      </select>
+                    </div>
                     <div class="field is-full">
                       <label for="tree-member-edit-name">Nama Anggota</label>
+                      <label class="checkbox-field"><input type="hidden" name="is_staff" value="0"><input type="checkbox" name="is_staff" value="1" data-tree-member-edit-staff {{ old('is_staff') ? 'checked' : '' }}> Staff (tanpa kampus, dapat memimpin lintas kampus)</label>
                       <input id="tree-member-edit-name" type="text" name="nama_lengkap" value="{{ old('_modal_id') === 'tree-member-edit-modal' ? old('nama_lengkap') : '' }}" maxlength="256" required data-tree-member-edit-name>
                     </div>
                     <label class="checkbox-field">
@@ -3989,24 +4271,27 @@
             <div class="modal-panel is-small" role="dialog" aria-modal="true" aria-labelledby="tree-member-delete-title">
               <div class="modal-head">
                 <div>
-                  <span class="eyebrow">Hapus Anggota</span>
+                  <span class="eyebrow">Arsipkan Anggota</span>
                   <h2 id="tree-member-delete-title" data-tree-member-delete-title>Anggota</h2>
                 </div>
                 <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
               </div>
               <div class="modal-body">
-                <p class="muted" data-tree-member-delete-context>Hapus anggota ini dari pohon pemuridan?</p>
+                <p class="muted" data-tree-member-delete-context>Arsipkan anggota ini? Riwayat kelompok dan laporan tetap disimpan.</p>
                 <form
                   method="POST"
                   action=""
                   class="inline-delete"
                   data-tree-member-delete-form
-                  data-action-template="{{ route('dashboard.pohon.anggota.destroy', ['anggota' => '__ID__']) }}"
+                  data-action-template="{{ route('dashboard.pohon.anggota.archive', ['anggota' => '__ID__']) }}"
                 >
                   @csrf
-                  @method('DELETE')
+                  <label class="field">
+                    <span>Alasan (opsional)</span>
+                    <textarea name="reason" rows="2" maxlength="1000" placeholder="Contoh: selesai masa pelayanan"></textarea>
+                  </label>
                   <div class="form-actions">
-                    <button class="btn is-compact is-danger" type="submit">Hapus Anggota</button>
+                    <button class="btn is-compact is-danger" type="submit">Arsipkan Anggota</button>
                     <button class="btn is-compact" type="button" data-modal-close>Batal</button>
                   </div>
                 </form>
@@ -4066,35 +4351,93 @@
             </div>
           </div>
 
+          <div class="modal" id="tree-member-transfer-modal" data-tree-member-transfer-modal hidden>
+            <div class="modal-panel is-small" role="dialog" aria-modal="true" aria-labelledby="tree-member-transfer-title">
+              <div class="modal-head"><div><span class="eyebrow">Riwayat Anggota</span><h2 id="tree-member-transfer-title" data-tree-member-transfer-title>Pindah Kelompok</h2></div><button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button></div>
+              <div class="modal-body">
+                <form method="POST" action="" class="compact-edit-form" data-tree-member-transfer-form data-action-template="{{ route('dashboard.pohon.anggota.transfer', ['anggota' => '__ID__']) }}">
+                  @csrf
+                  <div class="field"><label for="tree-member-transfer-group">Kelompok tujuan</label><select id="tree-member-transfer-group" name="kelompok_id" required><option value="">Pilih kelompok</option>@foreach ($groupOptions as $groupOption)<option value="{{ $groupOption->kelompok_id }}">{{ $groupOption->nama_kelompok }}{{ $groupOption->kampus?->singkatan ? ' - '.$groupOption->kampus->singkatan : '' }}</option>@endforeach</select></div>
+                  <div class="field"><label for="tree-member-transfer-reason">Alasan (opsional)</label><textarea id="tree-member-transfer-reason" name="reason" rows="2" maxlength="1000"></textarea></div>
+                  <div class="form-actions"><button class="btn is-compact" type="submit">Pindahkan</button><button class="btn is-compact" type="button" data-modal-close>Batal</button></div>
+                </form>
+              </div>
+              @endif
+            </div>
+          </div>
+
+          <div class="modal" id="tree-group-leader-modal" data-tree-group-leader-modal hidden>
+            <div class="modal-panel is-small" role="dialog" aria-modal="true" aria-labelledby="tree-group-leader-title">
+              <div class="modal-head"><div><span class="eyebrow">Kepemimpinan</span><h2 id="tree-group-leader-title" data-tree-group-leader-title>Ganti Pemimpin</h2></div><button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button></div>
+              <div class="modal-body">
+                <form method="POST" action="" class="compact-edit-form" data-tree-group-leader-form data-action-template="{{ route('dashboard.pohon.kelompok.leader', ['kelompok' => '__ID__']) }}">
+                  @csrf
+                  <div class="field"><label for="tree-group-leader-select">Pemimpin baru</label><select id="tree-group-leader-select" name="pemimpin_id" required><option value="">Pilih pemimpin</option>@foreach ($leaderOptions as $leaderOption)<option value="{{ $leaderOption->user_id }}">{{ $leaderOption->nama_lengkap }}{{ $leaderOption->isStaff() ? ' (Staff)' : ' (PKK)' }}</option>@endforeach</select></div>
+                  <div class="form-actions"><button class="btn is-compact" type="submit">Simpan Pemimpin</button><button class="btn is-compact" type="button" data-modal-close>Batal</button></div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal" id="tree-group-campus-modal" data-tree-group-campus-modal hidden>
+            <div class="modal-panel is-small" role="dialog" aria-modal="true" aria-labelledby="tree-group-campus-title">
+              <div class="modal-head">
+                <div>
+                  <span class="eyebrow">Relasi Kampus</span>
+                  <h2 id="tree-group-campus-title" data-tree-group-campus-title>Tambah Kampus Pelayanan</h2>
+                </div>
+                <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
+              </div>
+              <div class="modal-body">
+                <form method="POST" action="" class="compact-edit-form" data-tree-group-campus-form data-action-template="{{ route('dashboard.pohon.kelompok.campus.assign', ['kelompok' => '__ID__']) }}">
+                  @csrf
+                  <div class="field">
+                    <label for="tree-group-campus-select">Kampus pelayanan</label>
+                    <select id="tree-group-campus-select" name="kampus_id" required>
+                      <option value="">Pilih kampus</option>
+                      @foreach ($campusOptions as $option)
+                        <option value="{{ $option->kampus_id }}">{{ $option->nama_kampus }}{{ $option->singkatan ? ' ('.$option->singkatan.')' : '' }}</option>
+                      @endforeach
+                    </select>
+                  </div>
+                  <label class="checkbox-field"><input type="hidden" name="is_primary" value="0"><input type="checkbox" name="is_primary" value="1"> Jadikan kampus utama</label>
+                  <div class="form-actions"><button class="btn is-compact" type="submit">Simpan Relasi</button><button class="btn is-compact" type="button" data-modal-close>Batal</button></div>
+                </form>
+              </div>
+            </div>
+          </div>
+
           <div class="modal" id="tree-group-delete-modal" data-tree-group-delete-modal hidden>
             <div class="modal-panel is-small" role="dialog" aria-modal="true" aria-labelledby="tree-group-delete-title">
               <div class="modal-head">
                 <div>
-                  <span class="eyebrow">Hapus Kelompok</span>
+                  <span class="eyebrow">Arsipkan Kelompok</span>
                   <h2 id="tree-group-delete-title" data-tree-group-delete-title>Kelompok</h2>
                 </div>
                 <button class="btn modal-close" type="button" data-modal-close aria-label="Tutup">x</button>
               </div>
               <div class="modal-body">
-                <p class="muted" data-tree-group-delete-context>Hapus kelompok ini? Anggota di dalamnya akan dilepas dari kelompok.</p>
+                <p class="muted" data-tree-group-delete-context>Arsipkan kelompok ini? Anggota dan laporan tetap disimpan.</p>
                 <form
                   method="POST"
                   action=""
                   class="inline-delete"
                   data-tree-group-delete-form
-                  data-action-template="{{ route('dashboard.pohon.kelompok.destroy', ['kelompok' => '__ID__']) }}"
+                  data-action-template="{{ route('dashboard.pohon.kelompok.archive', ['kelompok' => '__ID__']) }}"
                 >
                   @csrf
-                  @method('DELETE')
+                  <label class="field">
+                    <span>Alasan (opsional)</span>
+                    <textarea name="reason" rows="2" maxlength="1000" placeholder="Contoh: kelompok selesai periode"></textarea>
+                  </label>
                   <div class="form-actions">
-                    <button class="btn is-compact is-danger" type="submit">Hapus Kelompok</button>
+                    <button class="btn is-compact is-danger" type="submit">Arsipkan Kelompok</button>
                     <button class="btn is-compact" type="button" data-modal-close>Batal</button>
                   </div>
                 </form>
               </div>
             </div>
           </div>
-        @endif
       @endif
     </main>
   </div>
@@ -4251,6 +4594,15 @@
     var treeGroupContextInput = treeGroupModal ? treeGroupModal.querySelector('[data-tree-group-context-input]') : null;
     var treeGroupLeaderInput = treeGroupModal ? treeGroupModal.querySelector('[data-tree-group-leader-input]') : null;
     var treeGroupCampusSelect = treeGroupModal ? treeGroupModal.querySelector('[data-tree-group-campus-select]') : null;
+    var treeGroupCampusModal = document.querySelector('[data-tree-group-campus-modal]');
+    var treeGroupCampusForm = treeGroupCampusModal ? treeGroupCampusModal.querySelector('[data-tree-group-campus-form]') : null;
+    var treeGroupCampusTitle = treeGroupCampusModal ? treeGroupCampusModal.querySelector('[data-tree-group-campus-title]') : null;
+    var treeMemberTransferModal = document.querySelector('[data-tree-member-transfer-modal]');
+    var treeMemberTransferForm = treeMemberTransferModal ? treeMemberTransferModal.querySelector('[data-tree-member-transfer-form]') : null;
+    var treeMemberTransferTitle = treeMemberTransferModal ? treeMemberTransferModal.querySelector('[data-tree-member-transfer-title]') : null;
+    var treeGroupLeaderModal = document.querySelector('[data-tree-group-leader-modal]');
+    var treeGroupLeaderForm = treeGroupLeaderModal ? treeGroupLeaderModal.querySelector('[data-tree-group-leader-form]') : null;
+    var treeGroupLeaderTitle = treeGroupLeaderModal ? treeGroupLeaderModal.querySelector('[data-tree-group-leader-title]') : null;
     var treeMemberModal = document.querySelector('[data-tree-member-create-modal]');
     var treeMemberContext = treeMemberModal ? treeMemberModal.querySelector('[data-tree-member-context]') : null;
     var treeMemberContextInput = treeMemberModal ? treeMemberModal.querySelector('[data-tree-member-context-input]') : null;
@@ -4263,6 +4615,7 @@
     var treeMemberEditName = treeMemberEditModal ? treeMemberEditModal.querySelector('[data-tree-member-edit-name]') : null;
     var treeMemberEditCampus = treeMemberEditModal ? treeMemberEditModal.querySelector('[data-tree-member-edit-campus]') : null;
     var treeMemberEditAngkatan = treeMemberEditModal ? treeMemberEditModal.querySelector('[data-tree-member-edit-angkatan]') : null;
+    var treeMemberEditLifecycle = treeMemberEditModal ? treeMemberEditModal.querySelector('[data-tree-member-edit-lifecycle]') : null;
     var treeMemberEditActive = treeMemberEditModal ? treeMemberEditModal.querySelector('[data-tree-member-edit-active]') : null;
     var treeMemberDeleteModal = document.querySelector('[data-tree-member-delete-modal]');
     var treeMemberDeleteTitle = treeMemberDeleteModal ? treeMemberDeleteModal.querySelector('[data-tree-member-delete-title]') : null;
@@ -4304,13 +4657,15 @@
         campusId: data.campusId || '',
         campusName: data.campusName || '',
         memberCampusId: data.memberCampusId || data.campusId || '',
+        isStaff: data.isStaff === '1',
         personId: data.personId || '',
         groupId: data.groupId || '',
         leaderId: data.leaderId || '',
         leaderName: data.leaderName || '',
         role: data.role || '',
         angkatan: data.angkatan || '',
-        isActive: data.isActive || '1'
+        isActive: data.isActive || '1',
+        lifecycleStatus: data.lifecycleStatus || (data.isActive === '1' ? 'active' : 'nonaktif')
       };
     }
 
@@ -4407,8 +4762,11 @@
       setTreeActionVisibility('add_group', canAddGroup);
       setTreeActionVisibility('add_member', canAddMember);
       setTreeActionVisibility('edit_member', canManageMember);
+      setTreeActionVisibility('transfer_member', canManageMember);
       setTreeActionVisibility('delete_member', canManageMember);
       setTreeActionVisibility('edit_group', canManageGroup);
+      setTreeActionVisibility('assign_campus', canManageGroup);
+      setTreeActionVisibility('reassign_leader', canManageGroup);
       setTreeActionVisibility('delete_group', canManageGroup);
       setTreeActionVisibility('view_detail', true);
 
@@ -4474,6 +4832,7 @@
     function openTreeMemberEditModal() {
       if (!treeMemberEditModal || !activeTreeNodeData || !activeTreeNodeData.personId) return;
       if (!applyActionTemplate(treeMemberEditForm, activeTreeNodeData.personId)) return;
+      treeMemberEditModal.querySelector('[data-tree-member-edit-staff]').checked = activeTreeNodeData.isStaff;
 
       if (treeMemberEditTitle) {
         treeMemberEditTitle.textContent = activeTreeNodeData.name;
@@ -4495,6 +4854,10 @@
         treeMemberEditAngkatan.value = activeTreeNodeData.angkatan || '';
       }
 
+      if (treeMemberEditLifecycle) {
+        treeMemberEditLifecycle.value = activeTreeNodeData.lifecycleStatus || 'active';
+      }
+
       setCheckboxValue(treeMemberEditActive, activeTreeNodeData.isActive);
 
       closeModal(treeActionModal);
@@ -4510,7 +4873,7 @@
       }
 
       if (treeMemberDeleteContext) {
-        treeMemberDeleteContext.textContent = 'Hapus ' + activeTreeNodeData.name + '? Kelompok yang dipimpin orang ini juga akan dihapus dari pohon.';
+        treeMemberDeleteContext.textContent = 'Arsipkan ' + activeTreeNodeData.name + '? Riwayat kelompok dan laporan tetap disimpan.';
       }
 
       closeModal(treeActionModal);
@@ -4552,11 +4915,45 @@
       }
 
       if (treeGroupDeleteContext) {
-        treeGroupDeleteContext.textContent = 'Hapus kelompok ' + activeTreeNodeData.name + '? Anggota di dalamnya akan dilepas dari kelompok.';
+        treeGroupDeleteContext.textContent = 'Arsipkan kelompok ' + activeTreeNodeData.name + '? Anggota dan laporan tetap disimpan.';
       }
 
       closeModal(treeActionModal);
       openModal(treeGroupDeleteModal);
+    }
+
+    function openTreeGroupCampusModal() {
+      if (!treeGroupCampusModal || !treeGroupCampusForm || !activeTreeNodeData || !activeTreeNodeData.groupId) return;
+
+      if (!applyActionTemplate(treeGroupCampusForm, activeTreeNodeData.groupId)) return;
+      if (treeGroupCampusTitle) {
+        treeGroupCampusTitle.textContent = 'Kampus Pelayanan - ' + (activeTreeNodeData.name || 'Kelompok');
+      }
+
+      closeModal(treeActionModal);
+      openModal(treeGroupCampusModal);
+    }
+
+    function openTreeMemberTransferModal() {
+      if (!treeMemberTransferModal || !treeMemberTransferForm || !activeTreeNodeData || !activeTreeNodeData.personId) return;
+      if (!applyActionTemplate(treeMemberTransferForm, activeTreeNodeData.personId)) return;
+      if (treeMemberTransferTitle) {
+        treeMemberTransferTitle.textContent = 'Pindah Kelompok - ' + (activeTreeNodeData.name || 'Anggota');
+      }
+
+      closeModal(treeActionModal);
+      openModal(treeMemberTransferModal);
+    }
+
+    function openTreeGroupLeaderModal() {
+      if (!treeGroupLeaderModal || !treeGroupLeaderForm || !activeTreeNodeData || !activeTreeNodeData.groupId) return;
+      if (!applyActionTemplate(treeGroupLeaderForm, activeTreeNodeData.groupId)) return;
+      if (treeGroupLeaderTitle) {
+        treeGroupLeaderTitle.textContent = 'Ganti Pemimpin - ' + (activeTreeNodeData.name || 'Kelompok');
+      }
+
+      closeModal(treeActionModal);
+      openModal(treeGroupLeaderModal);
     }
 
     function bindTreeNodeActions(root) {
@@ -4598,6 +4995,11 @@
           return;
         }
 
+        if (action === 'transfer_member') {
+          openTreeMemberTransferModal();
+          return;
+        }
+
         if (action === 'delete_member') {
           openTreeMemberDeleteModal();
           return;
@@ -4605,6 +5007,16 @@
 
         if (action === 'edit_group') {
           openTreeGroupEditModal();
+          return;
+        }
+
+        if (action === 'assign_campus') {
+          openTreeGroupCampusModal();
+          return;
+        }
+
+        if (action === 'reassign_leader') {
+          openTreeGroupLeaderModal();
           return;
         }
 

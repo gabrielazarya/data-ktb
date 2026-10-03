@@ -33,7 +33,17 @@
             <div>
               <span class="eyebrow">Kelompok KTB</span>
               <h3>{{ $group->nama_kelompok }}</h3>
-              <p>{{ $group->pemimpin?->nama_lengkap ? 'PKK '.$group->pemimpin->nama_lengkap : 'Belum ada pemimpin' }}</p>
+              <p>
+                {{ $group->pemimpin?->nama_lengkap ?: 'Belum ada pemimpin' }}
+                @if ($group->pemimpin?->isStaff())
+                  <span class="badge staff">Staff</span>
+                @elseif ($group->pemimpin)
+                  <span class="badge neutral">PKK</span>
+                @endif
+              </p>
+              @if ($group->campusAssignments->count() > 1)
+                <p class="muted">Pelayanan: {{ $group->campusAssignments->map(fn ($assignment) => $assignment->kampus?->singkatan ?: $assignment->kampus?->nama_kampus)->filter()->join(', ') }}</p>
+              @endif
             </div>
             <span class="badge {{ $group->is_active ? '' : 'warning' }}">{{ $group->is_active ? 'Aktif' : 'Nonaktif' }}</span>
           </div>
@@ -68,7 +78,7 @@
                       $attendanceIds = collect($report->anggota_hadir ?? [])->map(fn ($id) => (int) $id);
                       $attendanceNames = $group->anggota
                           ->whereIn('user_id', $attendanceIds)
-                          ->pluck('nama_lengkap')
+                          ->map(fn ($member) => $member->nama_lengkap.($member->isStaff() ? ' (Staff)' : ''))
                           ->values();
                     @endphp
                     <tr>

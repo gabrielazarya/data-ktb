@@ -43,6 +43,7 @@
             <th>Aktif</th>
             <th>PKK</th>
             <th>AKK</th>
+            <th>Staff</th>
             @if ($canManageData)
               <th>Aksi</th>
             @endif
@@ -63,8 +64,9 @@
               </td>
               <td>{{ number_format($kampus->total_users, 0, ',', '.') }}</td>
               <td>{{ number_format($kampus->active_users, 0, ',', '.') }}</td>
-              <td>{{ number_format($kampus->pkk_users, 0, ',', '.') }}</td>
-              <td>{{ number_format($kampus->akk_users, 0, ',', '.') }}</td>
+            <td>{{ number_format($kampus->pkk_users, 0, ',', '.') }}</td>
+            <td>{{ number_format($kampus->akk_users, 0, ',', '.') }}</td>
+            <td><span class="badge staff">{{ number_format($kampus->staff_users, 0, ',', '.') }}</span></td>
               @if ($canManageData)
                 <td>
                   <div class="row-actions">

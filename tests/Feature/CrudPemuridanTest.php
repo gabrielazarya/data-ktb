@@ -45,6 +45,35 @@ class CrudPemuridanTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_export_scoped_member_directory_as_csv(): void
+    {
+        $regio = Regio::query()->where('nama_regio', 'Surabaya')->firstOrFail();
+        $admin = User::query()->create([
+            'username' => 'admin_export_test',
+            'password' => 'password',
+            'nama_lengkap' => 'Admin Export Test',
+            'role' => 'admin',
+            'admin_tipe' => 'pelihat',
+            'regio_id' => $regio->regio_id,
+            'is_active' => true,
+        ]);
+        $member = User::query()->create([
+            'username' => 'member_export_test',
+            'password' => 'password',
+            'nama_lengkap' => 'Member Export Test',
+            'role' => 'akk',
+            'regio_id' => $regio->regio_id,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('dashboard.anggota-ktb.export'));
+
+        $response->assertOk();
+        $response->assertHeader('content-disposition');
+        $this->assertStringContainsString('Member Export Test', $response->streamedContent());
+        $this->assertStringNotContainsString('Admin Export Test', $response->streamedContent());
+    }
+
     public function test_admin_pelihat_cannot_manage_crud(): void
     {
         $admin = User::query()->create([

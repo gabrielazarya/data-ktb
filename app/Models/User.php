@@ -25,6 +25,15 @@ class User extends Authenticatable
      */
     protected $username = 'username';
 
+    protected static function booted(): void
+    {
+        static::saving(function (User $user): void {
+            if ($user->isStaff()) {
+                $user->kampus_id = null;
+            }
+        });
+    }
+
     /**
      * Override: field identifier untuk session (primary key)
      * CATATAN: Ini TIDAK mengubah field login — login tetap pakai 'username'
@@ -33,7 +42,6 @@ class User extends Authenticatable
     {
         return $this->getAttribute($this->primaryKey); // user_id
     }
-
 
     /**
      * Kolom yang boleh diisi secara massal
@@ -56,6 +64,11 @@ class User extends Authenticatable
         'foto_profil',
         'admin_tipe',
         'is_active',
+        'lifecycle_status',
+        'lifecycle_changed_at',
+        'lifecycle_reason',
+        'must_change_password',
+        'last_login_at',
     ];
 
     /**
@@ -77,8 +90,11 @@ class User extends Authenticatable
     {
         return [
             'tanggal_lahir' => 'date',
-            'password'      => 'hashed',
-            'is_active'     => 'boolean',
+            'password' => 'hashed',
+            'is_active' => 'boolean',
+            'lifecycle_changed_at' => 'datetime',
+            'must_change_password' => 'boolean',
+            'last_login_at' => 'datetime',
         ];
     }
 
@@ -99,6 +115,16 @@ class User extends Authenticatable
     public function isPKK(): bool
     {
         return $this->role === 'pkk';
+    }
+
+    public function isStaff(): bool
+    {
+        return $this->role === 'staff';
+    }
+
+    public function canLeadGroups(): bool
+    {
+        return in_array($this->role, ['pkk', 'staff'], true);
     }
 
     public function isAKK(): bool
@@ -167,11 +193,78 @@ class User extends Authenticatable
         return $this->hasMany(LaporanPertemuanKelompok::class, 'pkk_id', 'user_id');
     }
 
+    public function auditLogs()
+    {
+        return $this->hasMany(AuditLog::class, 'actor_user_id', 'user_id');
+    }
+
     /**
      * Daftar AKK yang dipimpin oleh PKK ini
      */
     public function akkMembers()
     {
         return $this->hasMany(User::class, 'pkk_id', 'user_id');
+    }
+
+    /**
+     * Historical and current group memberships. The legacy kelompok_id
+     * relation remains available while callers migrate to these relations.
+     */
+    public function groupMemberships()
+    {
+        return $this->hasMany(GroupMembership::class, 'user_id', 'user_id');
+    }
+
+    public function currentGroupMemberships()
+    {
+        return $this->groupMemberships()->active();
+    }
+
+    public function groups()
+    {
+        return $this->belongsToMany(
+            KelompokPemuridan::class,
+            'group_memberships',
+            'user_id',
+            'kelompok_id',
+            'user_id',
+            'kelompok_id'
+        )->withPivot(['membership_id', 'role', 'status', 'started_at', 'ended_at', 'reason', 'notes'])
+            ->withTimestamps();
+    }
+
+    public function mentorshipsAsMentor()
+    {
+        return $this->hasMany(Mentorship::class, 'mentor_id', 'user_id');
+    }
+
+    public function mentorshipsAsMentee()
+    {
+        return $this->hasMany(Mentorship::class, 'mentee_id', 'user_id');
+    }
+
+    public function activeMentorshipsAsMentor()
+    {
+        return $this->mentorshipsAsMentor()->active();
+    }
+
+    public function activeMentorshipsAsMentee()
+    {
+        return $this->mentorshipsAsMentee()->active();
+    }
+
+    public function groupLeadershipHistory()
+    {
+        return $this->hasMany(GroupLeaderHistory::class, 'leader_id', 'user_id');
+    }
+
+    public function isLifecycleActive(): bool
+    {
+        return ($this->lifecycle_status ?: 'active') === 'active' && (bool) $this->is_active;
+    }
+
+    public function scopeLifecycleActive($query)
+    {
+        return $query->where('lifecycle_status', 'active')->where('is_active', true);
     }
 }
